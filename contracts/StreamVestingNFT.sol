@@ -7,8 +7,6 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
 
-
-
 /**
  * @title An NFT representation of ownership of time locked tokens
  * @notice The time locked tokens are redeemable by the owner of the NFT
@@ -141,22 +139,6 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     }
   }
 
-  /// @notice function to partially redeem the tokens inside the NFT
-  /// this is really only used if you want to redeem all but the last token in the NFT to preserve the NFT itself
-  function partialRedeem(uint256 tokenId, uint256 redemptionAmount) external nonReentrant {
-    require(ownerOf(tokenId) == msg.sender, 'NFT03');
-    Stream memory stream = streams[tokenId];
-    (uint256 balance, uint256 remainder) = streamBalanceOf(tokenId);
-    require(balance > 0, 'nothing to redeem');
-    require(redemptionAmount < balance, 'not partial');
-    streams[tokenId].amount -= redemptionAmount;
-    lockedBalance[msg.sender][stream.token] -= redemptionAmount;
-    // sets the start date to now so that the remaining balance starts streaming again starting now
-    streams[tokenId].start = block.timestamp;
-    emit NFTPartiallyRedeemed(tokenId, remainder, redemptionAmount);
-    TransferHelper.withdrawTokens(stream.token, msg.sender, redemptionAmount);
-  }
-
   function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 balance, uint256 remainder) {
     /// @dev ensure that only the owner of the NFT can call this function
     require(ownerOf(tokenId) == holder, 'NFT03');
@@ -177,6 +159,14 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     }
     // deliver the requested token balance to the holder
     TransferHelper.withdrawTokens(stream.token, holder, balance);
+  }
+
+  function _transfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal virtual override {
+    revert('Not transferrable');
   }
 
   function streamBalanceOf(uint256 tokenId) public view returns (uint256 balance, uint256 remainder) {
