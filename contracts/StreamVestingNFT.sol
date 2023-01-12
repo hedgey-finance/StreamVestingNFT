@@ -93,7 +93,7 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 rate,
     address manager
   ) external nonReentrant {
-    require(holder != address(0) && manager != address(0));
+    require(holder != address(0));
     require(token != address(0));
     require(amount > 0);
     require(rate > 0 && rate <= amount);
