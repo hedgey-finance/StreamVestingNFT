@@ -6,7 +6,7 @@ import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
-//import './libraries/StreamLibrary.sol';
+import './libraries/StreamLibrary.sol';
 
 
 /**
@@ -97,7 +97,7 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
     require(rate > 0 && rate <= amount);
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
-    uint256 end = endDate(start, rate, amount);
+    uint256 end = StreamLibrary.endDate(start, rate, amount);
     lockedBalance[holder][token] += amount;
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
     streams[newItemId] = Stream(token, amount, start, cliffDate, rate);
@@ -105,39 +105,13 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
     emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate);
   }
 
-  /// @notice this is the external function that actually redeems an NFT position
-  /// @notice returns true if the function is successful
-  /// @dev this function calls the _redeemFuture(...) internal function which handles the requirements and checks
-  function redeemNFT(uint256 tokenId) external nonReentrant returns (bool) {
-    /// @dev calls the internal _redeemNFT function that performs various checks to ensure that only the owner of the NFT can redeem their NFT and Future position
-    _redeemNFT(msg.sender, tokenId);
-    return true;
-  }
-
-  function bulkRedeem(uint256[] memory tokenIds) external nonReentrant {
+  function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
       _redeemNFT(msg.sender, tokenIds[i]);
     }
   }
 
-  /// @notice function to partially redeem the tokens inside the NFT
-  /// this is really only used if you want to redeem all but the last token in the NFT to preserve the NFT itself
-  function partialRedeem(uint256 tokenId, uint256 redemptionAmount) external nonReentrant {
-    require(ownerOf(tokenId) == msg.sender, 'NFT03');
-    Stream memory stream = streams[tokenId];
-    (uint256 balance, uint256 remainder) = streamBalanceOf(tokenId);
-    require(balance > 0, 'nothing to redeem');
-    require(redemptionAmount < balance, 'not partial');
-    streams[tokenId].amount -= redemptionAmount;
-    lockedBalance[msg.sender][stream.token] -= redemptionAmount;
-    // sets the start date to now so that the remaining balance starts streaming again starting now
-    streams[tokenId].start = block.timestamp;
-    emit NFTPartiallyRedeemed(tokenId, remainder, redemptionAmount);
-    TransferHelper.withdrawTokens(stream.token, msg.sender, redemptionAmount);
-  }
-
   function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 balance, uint256 remainder) {
-    /// @dev ensure that only the owner of the NFT can call this function
     require(ownerOf(tokenId) == holder, 'NFT03');
     Stream memory stream = streams[tokenId];
     (balance, remainder) = streamBalanceOf(tokenId);
@@ -148,13 +122,10 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
       _burn(tokenId);
       emit NFTRedeemed(tokenId, balance);
     } else {
-      // resets the amount
       streams[tokenId].amount -= balance;
-      // sets the start date to now so that the remaining balance starts streaming again starting now
       streams[tokenId].start = block.timestamp;
       emit NFTPartiallyRedeemed(tokenId, remainder, balance);
     }
-    // deliver the requested token balance to the holder
     TransferHelper.withdrawTokens(stream.token, holder, balance);
   }
 
@@ -163,26 +134,25 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
     if (stream.start >= block.timestamp || stream.cliffDate >= block.timestamp) {
       remainder = stream.amount;
     } else {
-      /// @dev balance is just the number of seconds passed times the rate of tokens streamed per second, up to the total amount, ie min of the two
-      balance = min((block.timestamp - stream.start) * stream.rate, stream.amount);
+      balance = StreamLibrary.min((block.timestamp - stream.start) * stream.rate, stream.amount);
       remainder = stream.amount - balance;
     }
   }
 
   function getStreamEnd(uint256 tokenId) public view returns (uint256 end) {
     Stream memory stream = streams[tokenId];
-    end = endDate(stream.start, stream.rate, stream.amount);
+    end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
 
-  function endDate(
-    uint256 start,
-    uint256 rate,
-    uint256 amount
-  ) public pure returns (uint256 end) {
-    end = (amount / rate) + start;
-  }
+  // function endDate(
+  //   uint256 start,
+  //   uint256 rate,
+  //   uint256 amount
+  // ) public pure returns (uint256 end) {
+  //   end = (amount / rate) + start;
+  // }
 
-  function min(uint256 a, uint256 b) public pure returns (uint256 _min) {
-    _min = (a <= b) ? a : b;
-  }
+  // function min(uint256 a, uint256 b) public pure returns (uint256 _min) {
+  //   _min = (a <= b) ? a : b;
+  // }
 }
