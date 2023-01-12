@@ -6,6 +6,8 @@ import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
+//import './libraries/StreamLibrary.sol';
+
 
 /**
  * @title An NFT representation of ownership of time locked tokens
@@ -14,7 +16,7 @@ import './libraries/TransferHelper.sol';
  * @notice it uses the Enumerable extension to allow for easy lookup to pull balances of one account for multiple NFTs
  */
 
-contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
+contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
@@ -36,7 +38,6 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 start;
     uint256 cliffDate;
     uint256 rate;
-    address manager;
   }
 
   mapping(uint256 => Stream) public streams;
@@ -53,10 +54,8 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 start,
     uint256 cliffDate,
     uint256 end,
-    uint256 rate,
-    address manager
+    uint256 rate
   );
-  event NFTRevoked(uint256 indexed id, uint256 remainder, uint256 balance);
   event NFTRedeemed(uint256 indexed id, uint256 balance);
   event NFTPartiallyRedeemed(uint256 indexed id, uint256 remainder, uint256 balance);
   event URISet(string newURI);
@@ -90,10 +89,9 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 amount,
     uint256 start,
     uint256 cliffDate,
-    uint256 rate,
-    address manager
+    uint256 rate
   ) external nonReentrant {
-    require(holder != address(0) && manager != address(0));
+    require(holder != address(0));
     require(token != address(0));
     require(amount > 0);
     require(rate > 0 && rate <= amount);
@@ -102,22 +100,9 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 end = endDate(start, rate, amount);
     lockedBalance[holder][token] += amount;
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
-    streams[newItemId] = Stream(token, amount, start, cliffDate, rate, manager);
+    streams[newItemId] = Stream(token, amount, start, cliffDate, rate);
     _safeMint(holder, newItemId);
-    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate, manager);
-  }
-
-  function revokeNFT(uint256 tokenId, address fundsRecipient) external nonReentrant {
-    Stream memory stream = streams[tokenId];
-    require(stream.manager == msg.sender, 'not manager');
-    (uint256 balance, uint256 remainder) = streamBalanceOf(tokenId);
-    address holder = ownerOf(tokenId);
-    lockedBalance[holder][stream.token] -= stream.amount;
-    delete streams[tokenId];
-    _burn(tokenId);
-    TransferHelper.withdrawTokens(stream.token, fundsRecipient, remainder);
-    TransferHelper.withdrawTokens(stream.token, holder, balance);
-    emit NFTRevoked(tokenId, remainder, balance);
+    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate);
   }
 
   /// @notice this is the external function that actually redeems an NFT position
@@ -133,6 +118,22 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     for (uint256 i; i < tokenIds.length; i++) {
       _redeemNFT(msg.sender, tokenIds[i]);
     }
+  }
+
+  /// @notice function to partially redeem the tokens inside the NFT
+  /// this is really only used if you want to redeem all but the last token in the NFT to preserve the NFT itself
+  function partialRedeem(uint256 tokenId, uint256 redemptionAmount) external nonReentrant {
+    require(ownerOf(tokenId) == msg.sender, 'NFT03');
+    Stream memory stream = streams[tokenId];
+    (uint256 balance, uint256 remainder) = streamBalanceOf(tokenId);
+    require(balance > 0, 'nothing to redeem');
+    require(redemptionAmount < balance, 'not partial');
+    streams[tokenId].amount -= redemptionAmount;
+    lockedBalance[msg.sender][stream.token] -= redemptionAmount;
+    // sets the start date to now so that the remaining balance starts streaming again starting now
+    streams[tokenId].start = block.timestamp;
+    emit NFTPartiallyRedeemed(tokenId, remainder, redemptionAmount);
+    TransferHelper.withdrawTokens(stream.token, msg.sender, redemptionAmount);
   }
 
   function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 balance, uint256 remainder) {
@@ -155,14 +156,6 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     }
     // deliver the requested token balance to the holder
     TransferHelper.withdrawTokens(stream.token, holder, balance);
-  }
-
-  function _transfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual override {
-    revert('Not transferrable');
   }
 
   function streamBalanceOf(uint256 tokenId) public view returns (uint256 balance, uint256 remainder) {
