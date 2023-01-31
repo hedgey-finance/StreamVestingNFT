@@ -7,6 +7,7 @@ import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
 import './libraries/StreamLibrary.sol';
+import './libraries/NFTHelper.sol';
 
 /**
  * @title An NFT representation of ownership of time locked tokens
@@ -24,6 +25,8 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
   /// @dev admin for setting the baseURI;
   address private admin;
 
+  address public nftLocker;
+
   /// @dev the Stream is the storage in a struct of the tokens that are currently being streamed
   /// @dev token is the token address being streamed
   /// @dev amount is the total amount of tokens in the stream
@@ -38,6 +41,7 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 cliffDate;
     uint256 rate;
     address manager;
+    uint256 unlockDate;
   }
 
   mapping(uint256 => Stream) public streams;
@@ -55,7 +59,8 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 cliffDate,
     uint256 end,
     uint256 rate,
-    address manager
+    address manager,
+    uint256 unlockDate
   );
   event NFTRevoked(uint256 indexed id, uint256 remainder, uint256 balance);
   event NFTRedeemed(uint256 indexed id, uint256 balance);
@@ -92,7 +97,8 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 start,
     uint256 cliffDate,
     uint256 rate,
-    address manager
+    address manager,
+    uint256 unlockDate
   ) external nonReentrant {
     require(holder != address(0));
     require(token != address(0));
@@ -103,9 +109,9 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 end = StreamLibrary.endDate(start, rate, amount);
     lockedBalance[holder][token] += amount;
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
-    streams[newItemId] = Stream(token, amount, start, cliffDate, rate, manager);
+    streams[newItemId] = Stream(token, amount, start, cliffDate, rate, manager, unlockDate);
     _safeMint(holder, newItemId);
-    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate, manager);
+    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate, manager, unlockDate);
   }
 
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
@@ -135,7 +141,11 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
       streams[tokenId].start = block.timestamp;
       emit NFTPartiallyRedeemed(tokenId, remainder, balance);
     }
-    TransferHelper.withdrawTokens(stream.token, holder, balance);
+    if (stream.unlockDate > block.timestamp) {
+      NFTHelper.lockTokens(nftLocker, holder, stream.token, balance, stream.unlockDate);
+    } else {
+      TransferHelper.withdrawTokens(stream.token, holder, balance);
+    }
   }
 
   function _revokeNFT(
@@ -151,7 +161,11 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     delete streams[tokenId];
     _burn(tokenId);
     TransferHelper.withdrawTokens(stream.token, fundsRecipient, remainder);
-    TransferHelper.withdrawTokens(stream.token, holder, balance);
+    if (stream.unlockDate > block.timestamp) {
+      NFTHelper.lockTokens(nftLocker, holder, stream.token, balance, stream.unlockDate);
+    } else {
+      TransferHelper.withdrawTokens(stream.token, holder, balance);
+    }
     emit NFTRevoked(tokenId, remainder, balance);
   }
 
@@ -178,16 +192,4 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     Stream memory stream = streams[tokenId];
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
-
-  // function endDate(
-  //   uint256 start,
-  //   uint256 rate,
-  //   uint256 amount
-  // ) public pure returns (uint256 end) {
-  //   end = (amount / rate) + start;
-  // }
-
-  // function min(uint256 a, uint256 b) public pure returns (uint256 _min) {
-  //   _min = (a <= b) ? a : b;
-  // }
 }

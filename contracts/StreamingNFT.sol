@@ -144,15 +144,4 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
 
-  // function endDate(
-  //   uint256 start,
-  //   uint256 rate,
-  //   uint256 amount
-  // ) public pure returns (uint256 end) {
-  //   end = (amount / rate) + start;
-  // }
-
-  // function min(uint256 a, uint256 b) public pure returns (uint256 _min) {
-  //   _min = (a <= b) ? a : b;
-  // }
 }
