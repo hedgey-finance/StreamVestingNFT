@@ -179,24 +179,13 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
 
   function streamBalanceOf(uint256 tokenId) public view returns (uint256 balance, uint256 remainder) {
     Stream memory stream = streams[tokenId];
-    if (stream.start >= block.timestamp || stream.cliffDate >= block.timestamp) {
-      remainder = stream.amount;
-    } else {
-      /// @dev balance is just the number of seconds passed times the rate of tokens streamed per second, up to the total amount, ie min of the two
-      balance = StreamLibrary.min((block.timestamp - stream.start) * stream.rate, stream.amount);
-      remainder = stream.amount - balance;
-    }
-  }
-
-  function streamBalanceAtTime(uint256 tokenId, uint256 time) public view returns (uint256 balance, uint256 remainder) {
-    Stream memory stream = streams[tokenId];
-    if (stream.start >= time || stream.cliffDate >= time) {
-      remainder = stream.amount;
-    } else {
-      /// @dev balance is just the number of seconds passed times the rate of tokens streamed per second, up to the total amount, ie min of the two
-      balance = StreamLibrary.min((time - stream.start) * stream.rate, stream.amount);
-      remainder = stream.amount - balance;
-    }
+    (balance, remainder) = StreamLibrary.streamBalanceAtTime(
+      stream.start,
+      stream.cliffDate,
+      stream.amount,
+      stream.rate,
+      block.timestamp
+    );
   }
 
   function getStreamEnd(uint256 tokenId) public view returns (uint256 end) {

@@ -8,7 +8,6 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
 import './libraries/StreamLibrary.sol';
 
-
 /**
  * @title An NFT representation of ownership of time locked tokens
  * @notice The time locked tokens are redeemable by the owner of the NFT
@@ -105,15 +104,25 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
     emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate);
   }
 
+  /// @notice function to partially redeem and then transfer the NFT
+  /// this is useful to claim up to the second tokens before transferring them
+  /// @dev will revert if it is a full redemption as the NFT will be deleted
+  function redeemAndTransfer(uint256 tokenId, address to) external nonReentrant {
+    uint256 remainder = _redeemNFT(msg.sender, tokenId);
+    require(remainder > 0, 'NFT fully redeemed');
+    _transfer(msg.sender, to, tokenId);
+  }
+
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
       _redeemNFT(msg.sender, tokenIds[i]);
     }
   }
 
-  function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 balance, uint256 remainder) {
+  function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 remainder) {
     require(ownerOf(tokenId) == holder, 'NFT03');
     Stream memory stream = streams[tokenId];
+    uint256 balance;
     (balance, remainder) = streamBalanceOf(tokenId);
     require(balance > 0, 'nothing to redeem');
     lockedBalance[holder][stream.token] -= balance;
@@ -131,17 +140,17 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
 
   function streamBalanceOf(uint256 tokenId) public view returns (uint256 balance, uint256 remainder) {
     Stream memory stream = streams[tokenId];
-    if (stream.start >= block.timestamp || stream.cliffDate >= block.timestamp) {
-      remainder = stream.amount;
-    } else {
-      balance = StreamLibrary.min((block.timestamp - stream.start) * stream.rate, stream.amount);
-      remainder = stream.amount - balance;
-    }
+    (balance, remainder) = StreamLibrary.streamBalanceAtTime(
+      stream.start,
+      stream.cliffDate,
+      stream.amount,
+      stream.rate,
+      block.timestamp
+    );
   }
 
   function getStreamEnd(uint256 tokenId) public view returns (uint256 end) {
     Stream memory stream = streams[tokenId];
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
-
 }
