@@ -126,11 +126,14 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     }
   }
 
+  /// @notice in this iteration, the rredeem function can only be called for NFTs that are both vested and unlocked
+
   function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 balance, uint256 remainder) {
     require(ownerOf(tokenId) == holder, 'NFT03');
     Stream memory stream = streams[tokenId];
     (balance, remainder) = streamBalanceOf(tokenId);
     require(balance > 0, 'nothing to redeem');
+    require(stream.unlockDate <= block.timestamp, 'not unlocked');
     lockedBalance[holder][stream.token] -= balance;
     if (balance == stream.amount) {
       delete streams[tokenId];
@@ -141,13 +144,10 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
       streams[tokenId].start = block.timestamp;
       emit NFTPartiallyRedeemed(tokenId, remainder, balance);
     }
-    if (stream.unlockDate > block.timestamp) {
-      NFTHelper.lockTokens(nftLocker, holder, stream.token, balance, stream.unlockDate);
-    } else {
-      TransferHelper.withdrawTokens(stream.token, holder, balance);
-    }
+    TransferHelper.withdrawTokens(stream.token, holder, balance);
   }
 
+  /// @notice if the NFT gets revoked, then it is tested for the unlock date and tokens delivered to a locked hedgey NFT
   function _revokeNFT(
     address manager,
     uint256 tokenId,
