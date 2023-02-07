@@ -1,1 +1,1 @@
-# Hedgey Variable Token NFT Contracts
+# Hedgey Streaming and Vesting Token NFT Contracts
