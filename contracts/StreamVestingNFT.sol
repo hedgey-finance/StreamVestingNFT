@@ -120,18 +120,43 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     }
   }
 
+  /// @notice function to claim for all of my owned NFTs
+  /// @dev pulls the balance and uses the enumerate function to redeem each NFT based on their index id
+  function redeemMyNFTs() external nonReentrant {
+    for (uint256 i; i < balanceOf(msg.sender); i++) {
+      //check the balance of the vest first
+      uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
+      (uint256 balance, ) = streamBalanceOf(tokenId);
+      if (balance > 0) {
+        _redeemNFT(msg.sender, tokenId);
+      }
+    }
+  }
+
   function revokeNFT(uint256[] memory tokenIds, address fundsRecipient) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
       _revokeNFT(msg.sender, tokenIds[i], fundsRecipient);
     }
   }
 
+  /// @notice function for a token manager to revoke all the tokens owned by a single wallet
+  /// @notice this is really useful for a person when they leave and want to pull all of their
+  function revokeHolderNFTs(address holder, address fundsRecipient) external nonReentrant {
+    for (uint256 i; i < balanceOf(holder); i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(holder, i);
+      (, uint256 remainder) = streamBalanceOf(tokenId);
+      if (remainder > 0) {
+        _revokeNFT(msg.sender, tokenId, fundsRecipient);
+      }
+    }
+  }
+
   /// @notice in this iteration, the rredeem function can only be called for NFTs that are both vested and unlocked
 
-  function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 balance, uint256 remainder) {
+  function _redeemNFT(address holder, uint256 tokenId) internal {
     require(ownerOf(tokenId) == holder, 'NFT03');
     Stream memory stream = streams[tokenId];
-    (balance, remainder) = streamBalanceOf(tokenId);
+    (uint256 balance, uint256 remainder) = streamBalanceOf(tokenId);
     require(balance > 0, 'nothing to redeem');
     require(stream.unlockDate <= block.timestamp, 'not unlocked');
     lockedBalance[holder][stream.token] -= balance;
@@ -156,6 +181,7 @@ contract StreamVestingNFT is ERC721Enumerable, ReentrancyGuard {
     Stream memory stream = streams[tokenId];
     require(stream.manager == manager, 'not manager');
     (uint256 balance, uint256 remainder) = streamBalanceOf(tokenId);
+    require(remainder > 0, 'nothing to revoke');
     address holder = ownerOf(tokenId);
     lockedBalance[holder][stream.token] -= stream.amount;
     delete streams[tokenId];

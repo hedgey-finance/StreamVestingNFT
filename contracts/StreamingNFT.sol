@@ -119,6 +119,19 @@ contract StreamingHedgeys is ERC721Enumerable, ReentrancyGuard {
     }
   }
 
+  /// @notice function to claim for all of my owned NFTs
+  /// @dev pulls the balance and uses the enumerate function to redeem each NFT based on their index id
+  function redeemMyNFTs() external nonReentrant {
+    for (uint256 i; i < balanceOf(msg.sender); i++) {
+      //check the balance of the vest first
+      uint tokenId = tokenOfOwnerByIndex(msg.sender, i);
+      (uint balance,) = streamBalanceOf(tokenId);
+      if (balance > 0) {
+        _redeemNFT(msg.sender, tokenId);
+      }
+    }
+  }
+
   function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 remainder) {
     require(ownerOf(tokenId) == holder, 'NFT03');
     Stream memory stream = streams[tokenId];
