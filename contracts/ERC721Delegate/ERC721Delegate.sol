@@ -103,7 +103,7 @@ abstract contract ERC721Delegate is ERC721 {
   /**
    * @dev See {IERC165-supportsInterface}.
    */
-  function supportsInterface(bytes4 interfaceId) public view virtual override (ERC721) returns (bool) {
+  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721) returns (bool) {
     return interfaceId == type(IERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
   }
 

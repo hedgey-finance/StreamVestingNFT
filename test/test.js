@@ -8,7 +8,7 @@ describe('Testing for Admin Setup Function', () => {
     adminTest();
 });
 
-// describe('Testing for minting new NFTs', () => {
-//     createTests.createStreamTest();
-//     createTests.createVestTest();
-// });
+describe('Testing for minting new NFTs', () => {
+    createTests.createStreamTest();
+    createTests.createVestTest();
+});

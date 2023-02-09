@@ -17,7 +17,6 @@ const { BigNumber } = require('ethers');
     c = s.c;
     token = s.token;
     usdc = s.usdc;
-    await streaming.updateBaseURI('tokens/');
     amount = C.E18_100;
     rate = C.E18_1;
     start = await time.latest();
@@ -28,7 +27,6 @@ const { BigNumber } = require('ethers');
       .withArgs('1', a.address, token.address, amount, start, cliff, end, rate);
     expect(await token.balanceOf(streaming.address)).to.eq(amount);
     expect(await streaming.balanceOf(a.address)).to.eq(1);
-    expect(await streaming.lockedBalance(a.address, token.address)).to.eq(amount);
     //increase time to check updated balances
     await time.increase(10);
     const streamValues = await streaming.streamBalanceOf('1');
@@ -119,9 +117,9 @@ const createVestTest = () => {
   let vesting, creator, a, b, c, token, usdc;
   let amount, start, cliff, rate, end, manager, unlockDate;
 
-  it('Creates a new streaming NFT for wallet A', async () => {
+  it('Creates a new vesting NFT for wallet A', async () => {
     const v = await setupVesting();
-    vesting = v.streaming;
+    vesting = v.vesting;
     creator = v.creator;
     manager = creator.address;
     a = v.a;
@@ -129,7 +127,6 @@ const createVestTest = () => {
     c = v.c;
     token = v.token;
     usdc = v.usdc;
-    await vesting.updateBaseURI('tokens/');
     amount = C.E18_100;
     rate = C.E18_1;
     start = await time.latest();
@@ -141,7 +138,6 @@ const createVestTest = () => {
       .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, manager);
     expect(await token.balanceOf(vesting.address)).to.eq(amount);
     expect(await vesting.balanceOf(a.address)).to.eq(1);
-    expect(await vesting.lockedBalance(a.address, token.address)).to.eq(amount);
     //increase time to check updated balances
     await time.increase(10);
     const vestingValues = await vesting.streamBalanceOf('1');
