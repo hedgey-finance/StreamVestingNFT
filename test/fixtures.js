@@ -4,10 +4,10 @@ const C = require('./constants');
 
 async function setupVesting() {
   const [creator, a, b, c] = await ethers.getSigners();
-  const streamLib = await ethers.deployContract('StreamLibrary');
+  const streamLib = await ethers.deployContract('VestingLibrary');
   const Vesting = await ethers.getContractFactory('StreamVestingNFT', {
     libraries: {
-      StreamLibrary: streamLib.address,
+      VestingLibrary: streamLib.address,
     },
   });
   const vesting = await Vesting.deploy('Streamers', 'STMY');
