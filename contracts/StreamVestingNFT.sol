@@ -213,7 +213,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
 
-  function getLockedBalances(address holder, address token) public view returns (uint256 lockedBalance) {
+  function lockedBalances(address holder, address token) public view returns (uint256 lockedBalance) {
     uint256 holdersBalance = balanceOf(holder);
     for (uint256 i; i < holdersBalance; i++) {
       uint256 tokenId = tokenOfOwnerByIndex(holder, i);
@@ -224,13 +224,13 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-  function getDelegatedBalances(address delegate, address token) public view returns (uint256 lockedBalance) {
+  function delegatedBalances(address delegate, address token) public view returns (uint256 delegatedBalance) {
     uint256 delegateBalance = balanceOfDelegate(delegate);
     for (uint256 i; i < delegateBalance; i++) {
       uint256 tokenId = tokenOfDelegateByIndex(delegate, i);
       Stream memory stream = streams[tokenId];
       if (token == stream.token) {
-        lockedBalance += stream.amount;
+        delegatedBalance += stream.amount;
       }
     }
   }

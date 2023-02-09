@@ -184,13 +184,13 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-  function delegatedBalances(address delegate, address token) public view returns (uint256 lockedBalance) {
+  function delegatedBalances(address delegate, address token) public view returns (uint256 delegatedBalance) {
     uint256 delegateBalance = balanceOfDelegate(delegate);
     for (uint256 i; i < delegateBalance; i++) {
       uint256 tokenId = tokenOfDelegateByIndex(delegate, i);
       Stream memory stream = streams[tokenId];
       if (token == stream.token) {
-        lockedBalance += stream.amount;
+        delegatedBalance += stream.amount;
       }
     }
   }
