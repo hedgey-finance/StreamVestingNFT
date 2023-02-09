@@ -186,9 +186,46 @@ const streamVotingTest = () => {
   it('Wallet A delegates all tokens to creator address', async () => {
     // pull all of the currently owned tokens of A
     const balanceOfA = await streaming.balanceOf(a.address);
+    let atokens = [];
     for (let i = 0; i < balanceOfA; i++) {
         let tokenId = await streaming.tokenOfOwnerByIndex(a.address, i);
+        atokens.push(tokenId);
     }
+    expect(await streaming.connect(a).delegateAll(creator.address)).to.emit('TokenDelegated').withArgs(atokens[0], creator.address);
+
+    let creatorTokens = [];
+    const delegateBalanceOfCreator = await streaming.balanceOfDelegate(creator.address);
+    for (let i = 0; i < delegateBalanceOfCreator; i++) {
+        let tokenId = await streaming.tokenOfDelegateByIndex(creator.address, i);
+        creatorTokens.push(tokenId);
+    }
+    console.log(atokens);
+    console.log(creatorTokens);
+    expect(delegateBalanceOfCreator).to.eq(balanceOfA);
+    const lockedBalance = await streaming.lockedBalances(a.address, token.address);
+    const delegateBalance = await streaming.delegatedBalances(creator.address, token.address);
+    expect(lockedBalance).to.eq(delegateBalance);
+  });
+  it('transfers delegate rights to a new token holder when transferred', async () => {
+    //transfer a token from A that was delegated to creator to C, confirm the new delegate is C
+    const tokenId = '5';
+    const lockedAmount = (await streaming.streams(tokenId)).amount;
+    const owner = await streaming.ownerOf(tokenId);
+    expect(owner).to.eq(a.address);
+    const preCreatorDelegatedBalance = await streaming.delegatedBalances(creator.address, token.address);
+    const preCDelegatedBalance = await streaming.delegatedBalances(c.address, token.address);
+    const priorDelegate = await streaming.delegatedTo(tokenId);
+    expect(priorDelegate).to.eq(creator.address);
+    
+    expect(await streaming.connect(a).transferFrom(a.address, c.address, tokenId)).to.emit('TokenDelegated').withArgs(tokenId, c.address);
+    const newDelegate = await streaming.delegatedTo(tokenId);
+    expect(newDelegate).to.eq(c.address);
+    // check the C balances are updated and creator balances reduced
+    const postCreatorDelegatedBalance = await streaming.delegatedBalances(creator.address, token.address);
+    const postCDelegatedBalance = await streaming.delegatedBalances(c.address, token.address);
+    expect(postCreatorDelegatedBalance).to.eq(preCreatorDelegatedBalance.sub(lockedAmount));
+    expect(postCDelegatedBalance).to.eq(preCDelegatedBalance.add(lockedAmount));
+
   })
 };
 

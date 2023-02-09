@@ -48,7 +48,8 @@ abstract contract ERC721Delegate is ERC721 {
   }
 
   // function for burning should reduce the balances and set the token mapped to 0x0 address
-  function _removeDelegate(address from, uint256 tokenId) internal {
+  function _removeDelegate(uint256 tokenId) internal {
+    address from = delegatedTo(tokenId);
     uint256 lastTokenIndex = _delegateBalances[from] - 1;
     uint256 tokenIndex = _delegatedTokensIndex[tokenId];
     if (tokenIndex != lastTokenIndex) {
@@ -68,7 +69,7 @@ abstract contract ERC721Delegate is ERC721 {
     address to,
     uint256 tokenId
   ) internal {
-    _removeDelegate(from, tokenId);
+    _removeDelegate(tokenId);
     _addDelegate(to, tokenId);
   }
 
@@ -165,7 +166,7 @@ abstract contract ERC721Delegate is ERC721 {
     if (to == address(0)) {
       _removeTokenFromAllTokensEnumeration(tokenId);
       // if burned we simply remove
-      _removeDelegate(from, tokenId);
+      _removeDelegate(tokenId);
     } else if (to != from) {
       _addTokenToOwnerEnumeration(to, tokenId);
     }
