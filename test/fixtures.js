@@ -12,6 +12,9 @@ async function setupVesting() {
   });
   const vesting = await Vesting.deploy('Streamers', 'STMY');
 
+  const BatchVesting = await ethers.getContractFactory('BatchVesting');
+  const bacthVesting = BatchVesting.deploy();
+
   const Token = await ethers.getContractFactory('Token');
 
   const token = await Token.deploy(C.E18_10000, '18', 'Token', 'TK');
@@ -27,6 +30,7 @@ async function setupVesting() {
     token,
     usdc,
     vesting,
+    bacthVesting,
   };
 }
 
@@ -39,6 +43,9 @@ async function setupStreaming() {
     },
   });
   const streaming = await Streaming.deploy('StreamingHedgeys', 'STHD');
+
+  const BatchStreamer = await ethers.getContractFactory('BatchStreamer');
+  const batchStreamer = BatchStreamer.deploy();
 
   const Token = await ethers.getContractFactory('Token');
 
@@ -55,6 +62,7 @@ async function setupStreaming() {
     token,
     usdc,
     streaming,
+    batchStreamer,
   };
 }
 

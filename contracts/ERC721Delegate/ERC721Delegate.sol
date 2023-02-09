@@ -27,11 +27,12 @@ abstract contract ERC721Delegate is ERC721 {
   // Mapping from token id to position in the allTokens array
   mapping(uint256 => uint256) private _allTokensIndex;
 
-  //*************DELEGATE SECTION*************************************/
+  //*************DELEGATE SECTION***********************************************************************************************************/
 
-  event TokenDelegated(uint256 tokenId, address delegate);
+  event TokenDelegated(uint256 indexed tokenId, address delegate);
 
   function delegateToken(address delegate, uint256 tokenId) public {
+    require(msg.sender == ERC721.ownerOf(tokenId),'!owner');
     address currentDelegate = _delegates[tokenId];
     _transferDelegate(currentDelegate, delegate, tokenId);
   }
@@ -49,7 +50,7 @@ abstract contract ERC721Delegate is ERC721 {
   // function for burning should reduce the balances and set the token mapped to 0x0 address
   function _removeDelegate(address from, uint256 tokenId) internal {
     uint256 lastTokenIndex = _delegateBalances[from] - 1;
-    uint256 tokenIndex = _delegatedTokensIndex[lastTokenIndex];
+    uint256 tokenIndex = _delegatedTokensIndex[tokenId];
     if (tokenIndex != lastTokenIndex) {
       uint256 lastTokenId = _delegatedTokens[from][lastTokenIndex];
       _delegatedTokens[from][tokenIndex] = lastTokenId;
@@ -99,7 +100,7 @@ abstract contract ERC721Delegate is ERC721 {
     return _delegatedTokens[delegate][index];
   }
 
-  //*******************************************************************/
+  //*********************************************************************************************************************************************************************/
   /**
    * @dev See {IERC165-supportsInterface}.
    */

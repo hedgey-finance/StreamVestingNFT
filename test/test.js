@@ -1,6 +1,7 @@
 const adminTest = require('./adminTest');
 const createTests = require('./createTest');
 const voteTests = require('./votingTests');
+const delegateTests = require('./delegateTest');
 
 
 

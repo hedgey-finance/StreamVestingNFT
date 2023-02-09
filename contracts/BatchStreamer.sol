@@ -23,23 +23,23 @@ contract BatchStreamer {
     _createBatch(streamer, recipients, token, amounts, totalAmount, starts, cliffs, rates);
   }
 
-  function createBatch(
-    address streamer,
-    address[] memory recipients,
-    address token,
-    uint256[] memory amounts,
-    uint256[] memory starts,
-    uint256[] memory cliffs,
-    uint256[] memory rates,
-    uint256 mintType
-  ) external {
-    uint256 totalAmount;
-    for (uint256 i; i < amounts.length; i++) {
-      totalAmount += amounts[i];
-    }
-    emit BatchCreated(mintType);
-    _createBatch(streamer, recipients, token, amounts, totalAmount, starts, cliffs, rates);
-  }
+  // function createBatch(
+  //   address streamer,
+  //   address[] memory recipients,
+  //   address token,
+  //   uint256[] memory amounts,
+  //   uint256[] memory starts,
+  //   uint256[] memory cliffs,
+  //   uint256[] memory rates,
+  //   uint256 mintType
+  // ) external {
+  //   uint256 totalAmount;
+  //   for (uint256 i; i < amounts.length; i++) {
+  //     totalAmount += amounts[i];
+  //   }
+  //   emit BatchCreated(mintType);
+  //   _createBatch(streamer, recipients, token, amounts, totalAmount, starts, cliffs, rates);
+  // }
 
   function _createBatch(
     address streamer,
