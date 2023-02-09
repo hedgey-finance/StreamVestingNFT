@@ -118,10 +118,10 @@ const streamVotingTest = () => {
     const amounts = [C.E18_10, C.E18_10, C.E18_12, C.E18_10, C.E18_50];
     let additionalAmount = C.ZERO;
     for (let i = 0; i < amounts.length; i++) {
-        additionalAmount = additionalAmount.add(amounts[i])
-        await streaming.createNFT(a.address, token.address, amounts[i], start, cliff, rate);
+      additionalAmount = additionalAmount.add(amounts[i]);
+      await streaming.createNFT(a.address, token.address, amounts[i], start, cliff, rate);
     }
-    
+
     // wallet A should now hav 7 tokens
     const aBalanceOf = await streaming.balanceOf(a.address);
     expect(aBalanceOf).to.eq(7);
@@ -139,9 +139,15 @@ const streamVotingTest = () => {
     const b2Amount = (await streaming.streams(b2)).amount;
     const c1 = '1';
     const c1Amount = (await streaming.streams(c1)).amount;
-    expect(await streaming.connect(a).transferFrom(a.address, b.address, b1)).to.emit('TokenDelegated').withArgs(b1, b.address);
-    expect(await streaming.connect(a).transferFrom(a.address, b.address, b2)).to.emit('TokenDelegated').withArgs(b2, b.address);
-    expect(await streaming.connect(a).transferFrom(a.address, c.address, c1)).to.emit('TokenDelegated').withArgs(c1, c.address);
+    expect(await streaming.connect(a).transferFrom(a.address, b.address, b1))
+      .to.emit('TokenDelegated')
+      .withArgs(b1, b.address);
+    expect(await streaming.connect(a).transferFrom(a.address, b.address, b2))
+      .to.emit('TokenDelegated')
+      .withArgs(b2, b.address);
+    expect(await streaming.connect(a).transferFrom(a.address, c.address, c1))
+      .to.emit('TokenDelegated')
+      .withArgs(c1, c.address);
 
     // // check the locked balances
     const lockedBalanceA = await streaming.lockedBalances(a.address, token.address);
@@ -154,10 +160,9 @@ const streamVotingTest = () => {
 
     // // check the delegated balances
 
-    expect(await streaming.delegatedTo(b1)).to.eq(b.address)
-    expect(await streaming.delegatedTo(b2)).to.eq(b.address)
-    expect(await streaming.delegatedTo(c1)).to.eq(c.address)
-
+    expect(await streaming.delegatedTo(b1)).to.eq(b.address);
+    expect(await streaming.delegatedTo(b2)).to.eq(b.address);
+    expect(await streaming.delegatedTo(c1)).to.eq(c.address);
 
     let delegatdBalanceA = await streaming.delegatedBalances(a.address, token.address);
     let delegatdBalanceB = await streaming.delegatedBalances(b.address, token.address);
@@ -166,17 +171,25 @@ const streamVotingTest = () => {
     expect(delegatdBalanceA).to.eq(newADelegateBalance);
     expect(delegatdBalanceB).to.eq(b1Amount.add(b2Amount));
     expect(delegatdBalanceC).to.eq(c1Amount);
-    
+
     // ids to delegate
     const c2 = '3';
     const c2Amount = (await streaming.streams(c2)).amount;
-    expect(await streaming.connect(a).delegateToken(c.address, c2)).to.emit('TokenDelegated').withArgs(c2, c.address);
+    expect(await streaming.connect(a).delegateToken(c.address, c2))
+      .to.emit('TokenDelegated')
+      .withArgs(c2, c.address);
     delegatdBalanceA = await streaming.delegatedBalances(a.address, token.address);
     delegatdBalanceC = await streaming.delegatedBalances(c.address, token.address);
     expect(delegatdBalanceA).to.eq(newADelegateBalance.sub(c2Amount));
     expect(delegatdBalanceC).to.eq(c1Amount.add(c2Amount));
-
   });
+  it('Wallet A delegates all tokens to creator address', async () => {
+    // pull all of the currently owned tokens of A
+    const balanceOfA = await streaming.balanceOf(a.address);
+    for (let i = 0; i < balanceOfA; i++) {
+        let tokenId = await streaming.tokenOfOwnerByIndex(a.address, i);
+    }
+  })
 };
 
 module.exports = {

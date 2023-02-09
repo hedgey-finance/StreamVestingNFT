@@ -41,8 +41,6 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
 
   mapping(uint256 => Stream) public streams;
 
-  mapping(uint256 => address) public delegates;
-
   ///@notice Events when a new NFT (future) is created and one with a Future is redeemed (burned)
   event NFTCreated(
     uint256 indexed id,
@@ -80,14 +78,6 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     delete admin;
   }
 
-  /// @dev delegates all of my NFTs to a specific wallet for voting purposes only
-  function delegateNFTs(address delegate) external {
-    for (uint256 i; i < balanceOf(msg.sender); i++) {
-      uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
-      delegates[tokenId] = delegate;
-    }
-  }
-
   function createNFT(
     address holder,
     address token,
@@ -105,7 +95,6 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     uint256 end = StreamLibrary.endDate(start, rate, amount);
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
     streams[newItemId] = Stream(token, amount, start, cliffDate, rate);
-    delegates[newItemId] = holder;
     _safeMint(holder, newItemId);
     emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate);
   }
