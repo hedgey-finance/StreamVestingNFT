@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
-//import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import './ERC721Delegate/ERC721Delegate.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
@@ -111,6 +110,13 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate);
   }
 
+  function delegateAll(address delegate) external {
+    for (uint256 i; i < balanceOf(msg.sender); i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
+      delegateToken(delegate, tokenId);
+    }
+  }
+
   /// @notice function to partially redeem and then transfer the NFT
   /// this is useful to claim up to the second tokens before transferring them
   /// @dev will revert if it is a full redemption as the NFT will be deleted
@@ -176,5 +182,27 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   function getStreamEnd(uint256 tokenId) public view returns (uint256 end) {
     Stream memory stream = streams[tokenId];
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
+  }
+
+  function lockedBalances(address holder, address token) public view returns (uint256 lockedBalance) {
+    uint256 holdersBalance = balanceOf(holder);
+    for (uint256 i; i < holdersBalance; i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(holder, i);
+      Stream memory stream = streams[tokenId];
+      if (token == stream.token) {
+        lockedBalance += stream.amount;
+      }
+    }
+  }
+
+  function delegatedBalances(address delegate, address token) public view returns (uint256 lockedBalance) {
+    uint256 delegateBalance = balanceOfDelegate(delegate);
+    for (uint256 i; i < delegateBalance; i++) {
+      uint256 tokenId = tokenOfDelegateByIndex(delegate, i);
+      Stream memory stream = streams[tokenId];
+      if (token == stream.token) {
+        lockedBalance += stream.amount;
+      }
+    }
   }
 }

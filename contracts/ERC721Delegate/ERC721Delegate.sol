@@ -31,7 +31,7 @@ abstract contract ERC721Delegate is ERC721 {
 
   event TokenDelegated(uint256 tokenId, address delegate);
 
-  function delegateToken(address delegate, uint256 tokenId) external {
+  function delegateToken(address delegate, uint256 tokenId) public {
     address currentDelegate = _delegates[tokenId];
     _transferDelegate(currentDelegate, delegate, tokenId);
   }
@@ -39,7 +39,7 @@ abstract contract ERC721Delegate is ERC721 {
   // function for minting should add the token to the delegate and increase the balance
   function _addDelegate(address to, uint256 tokenId) internal {
     uint256 length = _delegateBalances[to];
-    _delegatedTokens[to][length];
+    _delegatedTokens[to][length] = tokenId;
     _delegatedTokensIndex[tokenId] = length;
     _delegates[tokenId] = to;
     _delegateBalances[to] += 1;

@@ -3,11 +3,10 @@ pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
-//import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
 import './ERC721Delegate/ERC721Delegate.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
-import './libraries/VestingLibrary.sol';
+import './libraries/StreamLibrary.sol';
 import './libraries/NFTHelper.sol';
 
 /**
@@ -106,11 +105,18 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     require(rate > 0 && rate <= amount);
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
-    uint256 end = VestingLibrary.endDate(start, rate, amount);
+    uint256 end = StreamLibrary.endDate(start, rate, amount);
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
     streams[newItemId] = Stream(token, amount, start, cliffDate, rate, manager, unlockDate);
     _safeMint(holder, newItemId);
     emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate, manager, unlockDate);
+  }
+
+  function delegateAll(address delegate) external {
+    for (uint256 i; i < balanceOf(msg.sender); i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
+      delegateToken(delegate, tokenId);
+    }
   }
 
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
@@ -144,7 +150,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     require(ownerOf(tokenId) == holder, 'NFT03');
     Stream memory stream = streams[tokenId];
     require(stream.unlockDate <= block.timestamp, 'not unlocked');
-    (uint256 balance, uint256 remainder) = VestingLibrary.streamBalanceAtTime(
+    (uint256 balance, uint256 remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
       stream.amount,
@@ -171,7 +177,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   ) internal {
     Stream memory stream = streams[tokenId];
     require(stream.manager == manager, 'not manager');
-    (uint256 balance, uint256 remainder) = VestingLibrary.streamBalanceAtTime(
+    (uint256 balance, uint256 remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
       stream.amount,
@@ -193,7 +199,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   function streamBalanceOf(uint256 tokenId) public view returns (uint256 balance, uint256 remainder) {
     Stream memory stream = streams[tokenId];
-    (balance, remainder) = VestingLibrary.streamBalanceAtTime(
+    (balance, remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
       stream.amount,
@@ -204,7 +210,29 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   function getStreamEnd(uint256 tokenId) public view returns (uint256 end) {
     Stream memory stream = streams[tokenId];
-    end = VestingLibrary.endDate(stream.start, stream.rate, stream.amount);
+    end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
+  }
+
+  function getLockedBalances(address holder, address token) public view returns (uint256 lockedBalance) {
+    uint256 holdersBalance = balanceOf(holder);
+    for (uint256 i; i < holdersBalance; i++) {
+      uint256 tokenId = tokenOfOwnerByIndex(holder, i);
+      Stream memory stream = streams[tokenId];
+      if (token == stream.token) {
+        lockedBalance += stream.amount;
+      }
+    }
+  }
+
+  function getDelegatedBalances(address delegate, address token) public view returns (uint256 lockedBalance) {
+    uint256 delegateBalance = balanceOfDelegate(delegate);
+    for (uint256 i; i < delegateBalance; i++) {
+      uint256 tokenId = tokenOfDelegateByIndex(delegate, i);
+      Stream memory stream = streams[tokenId];
+      if (token == stream.token) {
+        lockedBalance += stream.amount;
+      }
+    }
   }
 
   function _transfer(

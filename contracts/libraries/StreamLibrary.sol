@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.17;
 
-import '../interfaces/IStreamNFT.sol';
-
 library StreamLibrary {
   function min(uint256 a, uint256 b) public pure returns (uint256 _min) {
     _min = (a <= b) ? a : b;
@@ -28,28 +26,6 @@ library StreamLibrary {
     } else {
       balance = min((time - start) * rate, amount);
       remainder = amount - balance;
-    }
-  }
-
-  function getLockedBalances(address holder, address token) public view returns (uint256 lockedBalance) {
-    uint256 holdersBalance = IStreamNFT(address(this)).balanceOf(holder);
-    for (uint256 i; i < holdersBalance; i++) {
-      uint256 tokenId = IStreamNFT(address(this)).tokenOfOwnerByIndex(holder, i);
-      (address _token, uint256 amount, , , ) = IStreamNFT(address(this)).streams(tokenId);
-      if (token == _token) {
-        lockedBalance += amount;
-      }
-    }
-  }
-
-  function getDelegatedBalances(address delegate, address token) public view returns (uint256 lockedBalance) {
-    uint256 delegateBalance = IStreamNFT(address(this)).balanceOfDelegate(delegate);
-    for (uint256 i; i < delegateBalance; i++) {
-      uint256 tokenId = IStreamNFT(address(this)).tokenOfDelegateByIndex(delegate, i);
-      (address _token, uint256 amount, , , ) = IStreamNFT(address(this)).streams(tokenId);
-      if (token == _token) {
-        lockedBalance += amount;
-      }
     }
   }
 }
