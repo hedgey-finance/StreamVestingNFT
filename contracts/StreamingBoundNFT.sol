@@ -106,14 +106,6 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-  /// @notice function to partially redeem and then transfer the NFT
-  /// this is useful to claim up to the second tokens before transferring them
-  /// @dev will revert if it is a full redemption as the NFT will be deleted
-  function redeemAndTransfer(uint256 tokenId, address to) external nonReentrant {
-    uint256 remainder = _redeemNFT(msg.sender, tokenId);
-    require(remainder > 0, 'NFT fully redeemed');
-    _transfer(msg.sender, to, tokenId);
-  }
 
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
