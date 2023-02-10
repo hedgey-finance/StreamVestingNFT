@@ -138,9 +138,9 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-  function revokeNFT(uint256[] memory tokenIds, address fundsRecipient) external nonReentrant {
+  function revokeNFT(uint256[] memory tokenIds) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
-      _revokeNFT(msg.sender, tokenIds[i], fundsRecipient);
+      _revokeNFT(msg.sender, tokenIds[i]);
     }
   }
 
@@ -172,8 +172,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @notice if the NFT gets revoked, then it is tested for the unlock date and tokens delivered to a locked hedgey NFT
   function _revokeNFT(
     address manager,
-    uint256 tokenId,
-    address fundsRecipient
+    uint256 tokenId
   ) internal {
     Stream memory stream = streams[tokenId];
     require(stream.manager == manager, 'not manager');
@@ -188,7 +187,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     address holder = ownerOf(tokenId);
     delete streams[tokenId];
     _burn(tokenId);
-    TransferHelper.withdrawTokens(stream.token, fundsRecipient, remainder);
+    TransferHelper.withdrawTokens(stream.token, manager, remainder);
     if (stream.unlockDate > block.timestamp) {
       NFTHelper.lockTokens(nftLocker, holder, stream.token, balance, stream.unlockDate);
     } else {
