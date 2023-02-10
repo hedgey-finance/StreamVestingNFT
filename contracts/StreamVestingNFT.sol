@@ -100,7 +100,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 unlockDate
   ) external nonReentrant {
     require(holder != address(0));
-    require(holder != manager);
+    require(holder);
     require(token != address(0));
     require(amount > 0);
     require(rate > 0 && rate <= amount);
