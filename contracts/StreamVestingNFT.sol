@@ -40,7 +40,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 start;
     uint256 cliffDate;
     uint256 rate;
-    address manager;
+    address vestingAdmin;
     uint256 unlockDate;
   }
 
@@ -58,7 +58,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 cliffDate,
     uint256 end,
     uint256 rate,
-    address vestAdmin,
+    address vestingAdmin,
     uint256 unlockDate
   );
   event NFTRevoked(uint256 indexed id, uint256 balance, uint256 remainder);
@@ -96,10 +96,10 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 start,
     uint256 cliffDate,
     uint256 rate,
-    address vestAdmin,
+    address vestingAdmin,
     uint256 unlockDate
   ) external nonReentrant {
-    require(holder != address(0) && holder != vestAdmin);
+    require(holder != address(0) && holder != vestingAdmin);
     require(token != address(0));
     require(amount > 0);
     require(rate > 0 && rate <= amount);
@@ -107,9 +107,9 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
-    streams[newItemId] = Stream(token, amount, start, cliffDate, rate, vestAdmin, unlockDate);
+    streams[newItemId] = Stream(token, amount, start, cliffDate, rate, vestingAdmin, unlockDate);
     _safeMint(holder, newItemId);
-    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate, vestAdmin, unlockDate);
+    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate, vestingAdmin, unlockDate);
   }
 
   function delegateAll(address delegate) external {
@@ -171,11 +171,11 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @notice if the NFT gets revoked, then it is tested for the unlock date and tokens delivered to a locked hedgey NFT
   function _revokeNFT(
-    address vestAdmin,
+    address vestingAdmin,
     uint256 tokenId
   ) internal {
     Stream memory stream = streams[tokenId];
-    require(stream.manager == vestAdmin, 'not admin');
+    require(stream.vestingAdmin == vestingAdmin, 'not admin');
     (uint256 balance, uint256 remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
@@ -187,7 +187,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     address holder = ownerOf(tokenId);
     delete streams[tokenId];
     _burn(tokenId);
-    TransferHelper.withdrawTokens(stream.token, vestAdmin, remainder);
+    TransferHelper.withdrawTokens(stream.token, vestingAdmin, remainder);
     if (stream.unlockDate > block.timestamp) {
       NFTHelper.lockTokens(nftLocker, holder, stream.token, balance, stream.unlockDate);
     } else {
