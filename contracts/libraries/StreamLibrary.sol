@@ -11,7 +11,7 @@ library StreamLibrary {
     uint256 rate,
     uint256 amount
   ) public pure returns (uint256 end) {
-    end = (amount / rate) + start;
+    end = (amount % rate) == 0 ? (amount / rate) + start : (amount / rate) + start + 1;
   }
 
   function streamBalanceAtTime(

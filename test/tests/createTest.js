@@ -1,7 +1,7 @@
 const { expect } = require('chai');
-const { setupStreaming, setupVesting } = require('./fixtures');
+const { setupStreaming, setupVesting } = require('../fixtures');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const C = require('./constants');
+const C = require('../constants');
 const { BigNumber } = require('ethers');
 
  const createStreamTest = () => {

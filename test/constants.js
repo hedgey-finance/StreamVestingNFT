@@ -5,6 +5,11 @@ const bigMin = (a, b) => {
   else return b;
 };
 
+const randomBigNum = (base, max) => {
+  let num = Math.round(Math.random() * max);
+  return BigNumber.from(10).pow(base).mul(num);
+};
+
 module.exports = {
   ZERO: BigNumber.from(0),
   ONE: BigNumber.from(1),
@@ -17,12 +22,15 @@ module.exports = {
   E6_10000: BigNumber.from(10).pow(6).mul(10000),
   E18_05: BigNumber.from(10).pow(18).div(2),
   E18_1: BigNumber.from(10).pow(18), // 1e18
+  E18_3: BigNumber.from(10).pow(18).mul(3), // 3e18
   E18_10: BigNumber.from(10).pow(18).mul(10), // 10e18
-  E18_12: BigNumber.from(10).pow(18).mul(12), // 10e18
+  E18_12: BigNumber.from(10).pow(18).mul(12), // 12e18
+  E18_13: BigNumber.from(10).pow(18).mul(13), // 13e18
   E18_50: BigNumber.from(10).pow(18).mul(50), // 50e18
   E18_100: BigNumber.from(10).pow(18).mul(100), // 100e18
   E18_1000: BigNumber.from(10).pow(18).mul(1000), // 1000e18
   E18_10000: BigNumber.from(10).pow(18).mul(10000), // 1000e18
   ZERO_ADDRESS: '0x0000000000000000000000000000000000000000',
   bigMin,
+  randomBigNum,
 };
