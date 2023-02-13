@@ -68,7 +68,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   /// @notice there is no actual on-chain functions that require this URI to be anything beyond a blank string ("")
   /// @param _uri is the new baseURI for the metadata
   function updateBaseURI(string memory _uri) external {
-    require(msg.sender == admin, 'NFT02');
+    require(msg.sender == admin, 'SV01');
     baseURI = _uri;
     emit URISet(_uri);
   }

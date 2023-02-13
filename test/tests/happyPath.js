@@ -9,12 +9,11 @@ const { ethers } = require('hardhat');
 // includes minting an NFT, partially redeeming, then fully redeeming it
 
 module.exports = (vesting, bound, amountParams, timeParams) => {
-  let streaming, creator, a, b, c, token, usdc;
+  let s, streaming, creator, a, b, c, token, usdc;
   let amount, now, start, cliff, rate, end, admin, unlock;
   it(`Mints an vesting=${vesting} NFT to wallet A with ${ethers.utils.formatEther(
     amountParams.amount
   )} at a rate of ${ethers.utils.formatEther(amountParams.rate)}`, async () => {
-    let s;
     if (vesting == true) {
       s = await setupVesting();
     } else if (bound == true) {
