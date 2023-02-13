@@ -1,4 +1,10 @@
 const BigNumber = require('ethers').BigNumber;
+
+const bigMin = (a, b) => {
+  if (a.lte(b)) return a;
+  else return b;
+};
+
 module.exports = {
   ZERO: BigNumber.from(0),
   ONE: BigNumber.from(1),
@@ -18,4 +24,5 @@ module.exports = {
   E18_1000: BigNumber.from(10).pow(18).mul(1000), // 1000e18
   E18_10000: BigNumber.from(10).pow(18).mul(10000), // 1000e18
   ZERO_ADDRESS: '0x0000000000000000000000000000000000000000',
+  bigMin,
 };

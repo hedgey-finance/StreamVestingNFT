@@ -106,7 +106,6 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
       _redeemNFT(msg.sender, tokenIds[i]);
@@ -126,11 +125,10 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-  function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 remainder) {
+  function _redeemNFT(address holder, uint256 tokenId) internal {
     require(ownerOf(tokenId) == holder, 'NFT03');
     Stream memory stream = streams[tokenId];
-    uint256 balance;
-    (balance, remainder) = StreamLibrary.streamBalanceAtTime(
+    (uint256 balance, uint256 remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
       stream.amount,

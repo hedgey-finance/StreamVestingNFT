@@ -4,6 +4,7 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const C = require('./constants');
 const { BigNumber } = require('ethers');
 
+
 /** This set of tests is to test the unique functionality of the contracts for recording locked token balances in aggregate
  * It should test if the locked balances function from the StreamLibrary and VestingLibrary work properly
  * So that we can see the token locked balances across a users entire owned NFTs
@@ -16,7 +17,7 @@ const { BigNumber } = require('ethers');
  */
 
 const streamVotingTest = () => {
-  let streaming, creator, a, b, c, token, usdc, batchStreamer;
+  let streaming, creator, a, b, c, token, usdc;
   let amount, start, cliff, rate, end;
   it('When an NFT is minted the holder is the delegate', async () => {
     const s = await setupStreaming();
@@ -106,12 +107,6 @@ const streamVotingTest = () => {
 
     const delegateBalanceOfA = await streaming.balanceOfDelegate(a.address);
     expect(delegateBalanceOfA).to.eq(2);
-    // for (let i = 0; i < delegateBalanceOfA; i++) {
-    //   let tokenId = await streaming.tokenOfDelegateByIndex(a.address, i);
-    //   console.log(`the tokenId at index ${i} is: ${tokenId}`);
-    //   alist.push(tokenId);
-    // }
-    // console.log(`the list of tokens in A is ${alist}`);
   });
   it('Mints several more tokens to wallet A and it transfers some to B and delegates some to C', async () => {
     const priorAmount = await streaming.lockedBalances(a.address, token.address);
@@ -188,19 +183,19 @@ const streamVotingTest = () => {
     const balanceOfA = await streaming.balanceOf(a.address);
     let atokens = [];
     for (let i = 0; i < balanceOfA; i++) {
-        let tokenId = await streaming.tokenOfOwnerByIndex(a.address, i);
-        atokens.push(tokenId);
+      let tokenId = await streaming.tokenOfOwnerByIndex(a.address, i);
+      atokens.push(tokenId);
     }
-    expect(await streaming.connect(a).delegateAll(creator.address)).to.emit('TokenDelegated').withArgs(atokens[0], creator.address);
+    expect(await streaming.connect(a).delegateAll(creator.address))
+      .to.emit('TokenDelegated')
+      .withArgs(atokens[0], creator.address);
 
     let creatorTokens = [];
     const delegateBalanceOfCreator = await streaming.balanceOfDelegate(creator.address);
     for (let i = 0; i < delegateBalanceOfCreator; i++) {
-        let tokenId = await streaming.tokenOfDelegateByIndex(creator.address, i);
-        creatorTokens.push(tokenId);
+      let tokenId = await streaming.tokenOfDelegateByIndex(creator.address, i);
+      creatorTokens.push(tokenId);
     }
-    console.log(atokens);
-    console.log(creatorTokens);
     expect(delegateBalanceOfCreator).to.eq(balanceOfA);
     const lockedBalance = await streaming.lockedBalances(a.address, token.address);
     const delegateBalance = await streaming.delegatedBalances(creator.address, token.address);
@@ -216,8 +211,10 @@ const streamVotingTest = () => {
     const preCDelegatedBalance = await streaming.delegatedBalances(c.address, token.address);
     const priorDelegate = await streaming.delegatedTo(tokenId);
     expect(priorDelegate).to.eq(creator.address);
-    
-    expect(await streaming.connect(a).transferFrom(a.address, c.address, tokenId)).to.emit('TokenDelegated').withArgs(tokenId, c.address);
+
+    expect(await streaming.connect(a).transferFrom(a.address, c.address, tokenId))
+      .to.emit('TokenDelegated')
+      .withArgs(tokenId, c.address);
     const newDelegate = await streaming.delegatedTo(tokenId);
     expect(newDelegate).to.eq(c.address);
     // check the C balances are updated and creator balances reduced
@@ -225,8 +222,87 @@ const streamVotingTest = () => {
     const postCDelegatedBalance = await streaming.delegatedBalances(c.address, token.address);
     expect(postCreatorDelegatedBalance).to.eq(preCreatorDelegatedBalance.sub(lockedAmount));
     expect(postCDelegatedBalance).to.eq(preCDelegatedBalance.add(lockedAmount));
+  });
+  it('Clamining part of an NFT removes the delegated and locked token balance from itself', async () => {
+    start = await time.latest();
+    await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate);
+    const balanceOf = await streaming.balanceOf(creator.address);
+    const tokenId = await streaming.tokenOfOwnerByIndex(creator.address, balanceOf - 1);
 
-  })
+    const preLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
+    const preDelegateBalance = await streaming.delegatedBalances(creator.address, usdc.address);
+
+    await time.increase(10);
+    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const balance = receipt.events[1].args.balance;
+
+    const postLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
+    const postDelegatedBalance = await streaming.delegatedBalances(creator.address, usdc.address);
+
+    expect(postLockedBalance).to.eq(preLockedBalance.sub(balance));
+    expect(postDelegatedBalance).to.eq(preDelegateBalance.sub(balance));
+  });
+  it('Claiming a partial NFT removes the delegated balance from an external delegate', async () => {
+    start = await time.latest();
+    await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate);
+    const balanceOf = await streaming.balanceOf(creator.address);
+    const tokenId = await streaming.tokenOfOwnerByIndex(creator.address, balanceOf - 1);
+    await streaming.delegateToken(c.address, tokenId);
+
+    const preLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
+    const preDelegateBalance = await streaming.delegatedBalances(c.address, usdc.address);
+
+    await time.increase(10);
+    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const balance = receipt.events[1].args.balance;
+
+    const postLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
+    const postDelegatedBalance = await streaming.delegatedBalances(c.address, usdc.address);
+
+    expect(postLockedBalance).to.eq(preLockedBalance.sub(balance));
+    expect(postDelegatedBalance).to.eq(preDelegateBalance.sub(balance));
+  });
+  it('Full redemption of a token removes the delegated balances', async () => {
+    start = await time.latest();
+    amount = C.E18_10;
+    rate = C.E18_10;
+    cliff = start;
+    const tx = await (await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate)).wait();
+    const event = tx.events[tx.events.length - 1];
+    const tokenId = event.args.id;
+
+    const preLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
+    const preDelegateBalance = await streaming.delegatedBalances(creator.address, usdc.address);
+
+    await time.increase(10);
+    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const balance = receipt.events[receipt.events.length - 1].args.balance;
+    const postLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
+    const postDelegatedBalance = await streaming.delegatedBalances(creator.address, usdc.address);
+
+    expect(postLockedBalance).to.eq(preLockedBalance.sub(balance));
+    expect(postDelegatedBalance).to.eq(preDelegateBalance.sub(balance));
+  });
+  it('Full redemption of a token removes delegated balances from other delegate', async () => {
+    start = await time.latest();
+    amount = C.E18_10;
+    rate = C.E18_10;
+    cliff = start;
+    const tx = await (await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate)).wait();
+    const event = tx.events[tx.events.length - 1];
+    const tokenId = event.args.id;
+    await streaming.delegateToken(c.address, tokenId);
+
+    const preDelegateBalance = await streaming.delegatedBalances(c.address, usdc.address);
+
+    await time.increase(10);
+    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const balance = receipt.events[receipt.events.length - 1].args.balance;
+    
+    const postDelegatedBalance = await streaming.delegatedBalances(c.address, usdc.address);
+
+    expect(postDelegatedBalance).to.eq(preDelegateBalance.sub(balance));
+  });
 };
 
 module.exports = {
