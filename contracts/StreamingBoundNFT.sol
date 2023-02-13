@@ -7,6 +7,7 @@ import './ERC721Delegate/ERC721Delegate.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
 import './libraries/StreamLibrary.sol';
+import './DelegateLockedTokens.sol';
 
 /**
  * @title An NFT representation of ownership of time locked tokens
@@ -40,6 +41,8 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
   }
 
   mapping(uint256 => Stream) public streams;
+
+  mapping(uint256 => address) public delegateContracts;
 
   ///@notice Events when a new NFT (future) is created and one with a Future is redeemed (burned)
   event NFTCreated(
@@ -136,6 +139,8 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
       block.timestamp
     );
     require(balance > 0, 'nothing to redeem');
+    if (delegateContracts[tokenId] != address(0))
+      DelegateLockedTokens(delegateContracts[tokenId]).removeTokens(balance);
     if (balance == stream.amount) {
       delete streams[tokenId];
       _burn(tokenId);
@@ -183,6 +188,38 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
         delegatedBalance += stream.amount;
       }
     }
+  }
+
+  function newTokensDelegation(uint256 tokenId, address delegatee) external {
+    require(ownerOf(tokenId) == msg.sender);
+    Stream memory stream = streams[tokenId];
+    DelegateLockedTokens delegateContract = new DelegateLockedTokens(stream.token, tokenId);
+    address delegateContractAddress = address(delegateContract);
+    delegateContracts[tokenId] = delegateContractAddress;
+    TransferHelper.withdrawTokens(stream.token, delegateContractAddress, stream.amount);
+    DelegateLockedTokens(delegateContractAddress).delegate(delegatee);
+  }
+
+  function delegateTokens(uint256 tokenId, address delegatee) public {
+    _delegateTokens(msg.sender, tokenId, delegatee);
+  }
+
+  function _delegateTokens(
+    address holder,
+    uint256 tokenId,
+    address delegatee
+  ) internal {
+    require(ownerOf(tokenId) == holder);
+    require(delegateContracts[tokenId] != address(0));
+    DelegateLockedTokens(delegateContracts[tokenId]).delegate(delegatee);
+  }
+
+  function _afterTokenTransfer(
+    address from,
+    address to,
+    uint256 tokenId
+  ) internal override {
+    if (delegateContracts[tokenId] != address(0)) _delegateTokens(from, tokenId, to);
   }
 
   function _transfer(
