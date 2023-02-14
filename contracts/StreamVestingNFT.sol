@@ -84,7 +84,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   }
 
   function deleteAdmin() external {
-    require(msg.sender == admin);
+    require(msg.sender == admin, 'SV01');
     delete admin;
   }
 
@@ -99,10 +99,10 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     address vestingAdmin,
     uint256 unlockDate
   ) external nonReentrant {
-    require(holder != address(0) && holder != vestingAdmin);
-    require(token != address(0));
-    require(amount > 0);
-    require(rate > 0 && rate <= amount);
+    require(holder != address(0) && holder != vestingAdmin, 'SV02');
+    require(token != address(0), 'SV03');
+    require(amount > 0, 'SV04');
+    require(rate > 0 && rate <= amount, 'SV05');
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
@@ -147,9 +147,9 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @notice in this iteration, the rredeem function can only be called for NFTs that are both vested and unlocked
 
   function _redeemNFT(address holder, uint256 tokenId) internal {
-    require(ownerOf(tokenId) == holder, 'NFT03');
+    require(ownerOf(tokenId) == holder, 'SV06');
     Stream memory stream = streams[tokenId];
-    require(stream.unlockDate <= block.timestamp, 'not unlocked');
+    require(stream.unlockDate <= block.timestamp, 'SV07');
     (uint256 balance, uint256 remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
@@ -157,7 +157,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
       stream.rate,
       block.timestamp
     );
-    require(balance > 0, 'nothing to redeem');
+    require(balance > 0, 'SV08');
     if (balance == stream.amount) {
       delete streams[tokenId];
       _burn(tokenId);
@@ -175,7 +175,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 tokenId
   ) internal {
     Stream memory stream = streams[tokenId];
-    require(stream.vestingAdmin == vestingAdmin, 'not admin');
+    require(stream.vestingAdmin == vestingAdmin, 'SV09');
     (uint256 balance, uint256 remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
@@ -183,7 +183,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
       stream.rate,
       block.timestamp
     );
-    require(remainder > 0, 'nothing to revoke');
+    require(remainder > 0, 'SV10');
     address holder = ownerOf(tokenId);
     delete streams[tokenId];
     _burn(tokenId);

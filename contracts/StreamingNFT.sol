@@ -74,7 +74,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   }
 
   function deleteAdmin() external {
-    require(msg.sender == admin);
+    require(msg.sender == admin, 'SV01');
     delete admin;
   }
 
@@ -86,10 +86,10 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     uint256 cliffDate,
     uint256 rate
   ) external nonReentrant {
-    require(holder != address(0));
-    require(token != address(0));
-    require(amount > 0);
-    require(rate > 0 && rate <= amount);
+    require(holder != address(0), 'SV02');
+    require(token != address(0), 'SV03');
+    require(amount > 0, 'SV04');
+    require(rate > 0 && rate <= amount, 'SV05');
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
@@ -111,7 +111,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   /// @dev will revert if it is a full redemption as the NFT will be deleted
   function redeemAndTransfer(uint256 tokenId, address to) external nonReentrant {
     uint256 remainder = _redeemNFT(msg.sender, tokenId);
-    require(remainder > 0, 'NFT fully redeemed');
+    require(remainder > 0, 'SV11');
     _transfer(msg.sender, to, tokenId);
   }
 
@@ -135,7 +135,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   }
 
   function _redeemNFT(address holder, uint256 tokenId) internal returns (uint256 remainder) {
-    require(ownerOf(tokenId) == holder, 'NFT03');
+    require(ownerOf(tokenId) == holder, 'SV06');
     Stream memory stream = streams[tokenId];
     uint256 balance;
     (balance, remainder) = StreamLibrary.streamBalanceAtTime(
@@ -145,7 +145,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
       stream.rate,
       block.timestamp
     );
-    require(balance > 0, 'nothing to redeem');
+    require(balance > 0, 'SV08');
     if (balance == stream.amount) {
       delete streams[tokenId];
       _burn(tokenId);

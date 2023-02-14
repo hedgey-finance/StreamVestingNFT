@@ -86,13 +86,13 @@ abstract contract ERC721Delegate is ERC721 {
   mapping(uint256 => uint256) private _delegatedTokensIndex;
 
   function balanceOfDelegate(address delegate) public view returns (uint256) {
-    require(delegate != address(0));
+    require(delegate != address(0), '!address(0)');
     return _delegateBalances[delegate];
   }
 
   function delegatedTo(uint256 tokenId) public view returns (address) {
     address delegate = _delegates[tokenId];
-    require(delegate != address(0));
+    require(delegate != address(0), '!address(0)');
     return delegate;
   }
 
