@@ -18,6 +18,7 @@ contract BatchStreamer {
   ) external {
     uint256 totalAmount;
     for (uint256 i; i < amounts.length; i++) {
+      require(amounts[i] > 0, 'SV04');
       totalAmount += amounts[i];
     }
     _createBatch(streamer, recipients, token, amounts, totalAmount, starts, cliffs, rates);
@@ -35,6 +36,7 @@ contract BatchStreamer {
   ) external {
     uint256 totalAmount;
     for (uint256 i; i < amounts.length; i++) {
+      require(amounts[i] > 0, 'SV04');
       totalAmount += amounts[i];
     }
     emit BatchCreated(mintType);
@@ -55,9 +57,11 @@ contract BatchStreamer {
       recipients.length == amounts.length &&
         amounts.length == starts.length &&
         starts.length == cliffs.length &&
-        cliffs.length == rates.length
+        cliffs.length == rates.length,
+        'array length error'
     );
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
+    SafeERC20.safeIncreaseAllowance(IERC20(token), streamer, totalAmount);
     for (uint256 i; i < recipients.length; i++) {
       IStreamNFT(streamer).createNFT(recipients[i], token, amounts[i], starts[i], cliffs[i], rates[i]);
     }

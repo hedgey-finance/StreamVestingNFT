@@ -13,7 +13,7 @@ async function setupVesting() {
   const streaming = await Streaming.deploy('Streamers', 'STMY');
 
   const BatchStreamer = await ethers.getContractFactory('BatchVester');
-  const batchStreamer = BatchStreamer.deploy();
+  const batchStreamer = await BatchStreamer.deploy();
 
   const Token = await ethers.getContractFactory('Token');
 
@@ -21,6 +21,7 @@ async function setupVesting() {
   const usdc = await Token.deploy(C.E18_10000, '6', 'USDC', 'USDC');
 
   await token.approve(streaming.address, C.E18_10000);
+  await token.approve(batchStreamer.address, C.E18_10000);
   await usdc.approve(streaming.address, C.E18_10000);
   return {
     creator,
@@ -45,7 +46,7 @@ async function setupStreaming() {
   const streaming = await Streaming.deploy('StreamingHedgeys', 'STHD');
 
   const BatchStreamer = await ethers.getContractFactory('BatchStreamer');
-  const batchStreamer = BatchStreamer.deploy();
+  const batchStreamer = await BatchStreamer.deploy();
 
   const Token = await ethers.getContractFactory('Token');
 
@@ -53,6 +54,7 @@ async function setupStreaming() {
   const usdc = await Token.deploy(C.E18_10000, '6', 'USDC', 'USDC');
 
   await token.approve(streaming.address, C.E18_10000);
+  await token.approve(batchStreamer.address, C.E18_10000);
   await usdc.approve(streaming.address, C.E18_10000);
   return {
     creator,
@@ -77,7 +79,7 @@ async function setupBoundStreaming() {
   const streaming = await Streaming.deploy('StreamingBoundHedgeys', 'STHD');
 
   const BatchStreamer = await ethers.getContractFactory('BatchStreamer');
-  const batchStreamer = BatchStreamer.deploy();
+  const batchStreamer = await BatchStreamer.deploy();
 
   const Token = await ethers.getContractFactory('Token');
 
@@ -85,6 +87,7 @@ async function setupBoundStreaming() {
   const usdc = await Token.deploy(C.E18_10000, '6', 'USDC', 'USDC');
 
   await token.approve(streaming.address, C.E18_10000);
+  await token.approve(batchStreamer.address, C.E18_10000);
   await usdc.approve(streaming.address, C.E18_10000);
   return {
     creator,

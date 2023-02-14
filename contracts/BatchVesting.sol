@@ -16,10 +16,11 @@ contract BatchVester {
     uint256[] memory cliffs,
     uint256[] memory rates,
     address manager,
-    uint[] memory unlocks
+    uint256[] memory unlocks
   ) external {
     uint256 totalAmount;
     for (uint256 i; i < amounts.length; i++) {
+      require(amounts[i] > 0, 'SV04');
       totalAmount += amounts[i];
     }
     _createBatch(vester, recipients, token, amounts, totalAmount, starts, cliffs, rates, manager, unlocks);
@@ -34,11 +35,12 @@ contract BatchVester {
     uint256[] memory cliffs,
     uint256[] memory rates,
     address manager,
-    uint[] memory unlocks,
+    uint256[] memory unlocks,
     uint256 mintType
   ) external {
     uint256 totalAmount;
     for (uint256 i; i < amounts.length; i++) {
+      require(amounts[i] > 0, 'SV04');
       totalAmount += amounts[i];
     }
     emit BatchCreated(mintType);
@@ -55,17 +57,29 @@ contract BatchVester {
     uint256[] memory cliffs,
     uint256[] memory rates,
     address manager,
-    uint[] memory unlocks
+    uint256[] memory unlocks
   ) internal {
     require(
       recipients.length == amounts.length &&
         amounts.length == starts.length &&
         starts.length == cliffs.length &&
-        cliffs.length == rates.length
+        cliffs.length == rates.length &&
+        unlocks.length == cliffs.length,
+        'array length error'
     );
     TransferHelper.transferTokens(token, msg.sender, address(this), totalAmount);
+    SafeERC20.safeIncreaseAllowance(IERC20(token), vester, totalAmount);
     for (uint256 i; i < recipients.length; i++) {
-      IVestingNFT(vester).createNFT(recipients[i], token, amounts[i], starts[i], cliffs[i], rates[i], manager, unlocks[i]);
+      IVestingNFT(vester).createNFT(
+        recipients[i],
+        token,
+        amounts[i],
+        starts[i],
+        cliffs[i],
+        rates[i],
+        manager,
+        unlocks[i]
+      );
     }
   }
 }
