@@ -8,10 +8,10 @@ const { ethers } = require('hardhat');
 // happy path testing for each of the contracts
 // includes minting an NFT, partially redeeming, then fully redeeming it
 
-module.exports = (vesting, bound, amountParams, timeParams) => {
+module.exports = (vesting, locks, bound, amountParams, timeParams) => {
   let s, streaming, creator, a, b, c, token, usdc;
   let amount, now, start, cliff, rate, end, admin, unlock;
-  it(`Mints an vesting=${vesting} NFT to wallet A with ${ethers.utils.formatEther(
+  it(`Mints an ${vesting ? 'vesting' : 'streaming'} NFT to wallet A with ${ethers.utils.formatEther(
     amountParams.amount
   )} at a rate of ${ethers.utils.formatEther(amountParams.rate)}`, async () => {
     if (vesting == true) {
@@ -34,11 +34,19 @@ module.exports = (vesting, bound, amountParams, timeParams) => {
     start = timeParams.startShift + now;
     cliff = timeParams.cliffShift;
     admin = creator.address;
-    unlock = '0';
+    unlock = now;
+    let transferLock = true;
     if (vesting) {
-      expect(await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, admin, unlock))
+      if (locks) {
+        expect(await streaming.createLockedNFT(a.address, token.address, amount, start, cliff, rate, admin, unlock, transferLock))
         .to.emit('NFTCreated')
-        .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, admin, unlock);
+        .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, admin, unlock, transferLock);
+      } else {
+        expect(await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, admin))
+        .to.emit('NFTCreated')
+        .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, admin, '0', false);
+      }
+      
     } else {
       expect(await streaming.createNFT(a.address, token.address, amount, start, cliff, rate))
         .to.emit('NFTCreated')

@@ -12,7 +12,8 @@ interface IVestingNFT {
     uint256 end,
     uint256 rate,
     address manager,
-    uint256 unlockDate
+    uint256 unlockDate,
+    bool transferableNFTLockers
   );
   event NFTRevoked(uint256 indexed id, uint256 balance, uint256 remainder);
   event NFTRedeemed(uint256 indexed id, uint256 balance, uint256 remainder);
@@ -25,13 +26,25 @@ interface IVestingNFT {
     uint256 start,
     uint256 cliffDate,
     uint256 rate,
+    address manager
+  ) external;
+
+  function createLockedNFT(
+    address holder,
+    address token,
+    uint256 amount,
+    uint256 start,
+    uint256 cliffDate,
+    uint256 rate,
     address manager,
-    uint256 unlockDate
+    uint256 unlockDate,
+    bool transferableNFTLockers
   ) external;
 
   function revokeNFT(uint256[] memory tokenId) external;
 
   function redeemNFT(uint256[] memory tokenId) external;
+
   function redeemAllNFTs() external;
 
   function streamBalanceOf(uint256 tokenId) external view returns (uint256 balance, uint256 remainder);
@@ -48,13 +61,19 @@ interface IVestingNFT {
       uint256 cliffDate,
       uint256 rate,
       address manager,
-      uint256 unlockDate
+      uint256 unlockDate,
+      bool transferableNFTLockers
     );
 
-    function balanceOf(address holder) external view returns (uint256 balance);
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
-    function tokenByIndex(uint256 index) external view returns (uint256);
-    function balanceOfDelegate(address delegate) external view returns (uint256);
-    function delegatedTo(uint256 tokenId) external view returns (address);
-    function tokenOfDelegateByIndex(address delegate, uint256 index) external view returns (uint256);
+  function balanceOf(address holder) external view returns (uint256 balance);
+
+  function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+
+  function tokenByIndex(uint256 index) external view returns (uint256);
+
+  function balanceOfDelegate(address delegate) external view returns (uint256);
+
+  function delegatedTo(uint256 tokenId) external view returns (address);
+
+  function tokenOfDelegateByIndex(address delegate, uint256 index) external view returns (uint256);
 }

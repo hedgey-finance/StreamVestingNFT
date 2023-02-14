@@ -44,7 +44,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 rate;
     address vestingAdmin;
     uint256 unlockDate;
-    bool transferableNFTLockers;
+    bool transferableNFTLocker;
   }
 
   mapping(uint256 => Stream) public streams;
@@ -61,7 +61,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 rate,
     address vestingAdmin,
     uint256 unlockDate,
-    bool transferableNFTLockers
+    bool transferableNFTLocker
   );
 
   event NFTRevoked(uint256 indexed id, uint256 balance, uint256 remainder);
@@ -74,8 +74,11 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @notice the constructur function has two params:
   /// @param name is the name of the collection of NFTs
   /// @param symbol is the symbol for the NFT collection, typically an abbreviated version of the name
-  constructor(string memory name, string memory symbol) ERC721(name, symbol) {
+  constructor(string memory name, string memory symbol, address transferNFTLocker, address nontransferNFTLocker) ERC721(name, symbol) {
+    require(transferNFTLocker != address(0) && nontransferNFTLocker != address(0));
     admin = msg.sender;
+    nftLockers[true] = transferNFTLocker;
+    nftLockers[false] = nontransferNFTLocker;
   }
 
   /// @dev internal function used by the standard ER721 function tokenURI to retrieve the baseURI privately held to visualize and get the metadata
@@ -118,7 +121,8 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     _createNFT(holder, token, amount, start, cliffDate, rate, vestingAdmin, 0, false);
   }
 
-  /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens
+  /// @notice createLockedNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens, 
+  /// with the caveat that vested tokens are subjext to a lockup period, such that even once tokens are vested they can only be redeemed after the unlock date has passed
   /// @param holder is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
   /// @param token is the token address of the tokens that will be vesting inside the stream
   /// @param amount is the total amount of tokens to be locked and vesting for the duration of the streaming unlock period
@@ -128,8 +132,8 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @param rate is the rate tokens are continuously vesting, in seconds
   /// @param vestingAdmin is the admin of the vesting contract who has the enormous power to revoke the vesting stream at any time prior to full vest date
   /// @param unlockDate is an optional field to insert a date that vested tokens unlock after. In the case of tokens being revoked, they will be transferred to another Hedgey NFT
-  /// @param transferableNFTLockers is a bool that describes if vested tokens, when still locked and  get revoked, mint a hedgey NFT that is transferrable or not transferrable
-  function createNFT(
+  /// @param transferableNFTLocker is a bool that describes if vested tokens, when still locked and  get revoked, mint a hedgey NFT that is transferrable or not transferrable
+  function createLockedNFT(
     address holder,
     address token,
     uint256 amount,
@@ -138,9 +142,9 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 rate,
     address vestingAdmin,
     uint256 unlockDate,
-    bool transferableNFTLockers
+    bool transferableNFTLocker
   ) external nonReentrant {
-    _createNFT(holder, token, amount, start, cliffDate, rate, vestingAdmin, unlockDate, transferableNFTLockers);
+    _createNFT(holder, token, amount, start, cliffDate, rate, vestingAdmin, unlockDate, transferableNFTLocker);
   }
 
   function _createNFT(
@@ -152,7 +156,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 rate,
     address vestingAdmin,
     uint256 unlockDate,
-    bool transferableNFTLockers
+    bool transferableNFTLocker
   ) internal {
     require(holder != address(0) && holder != vestingAdmin, 'SV02');
     require(token != address(0), 'SV03');
@@ -170,7 +174,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
       rate,
       vestingAdmin,
       unlockDate,
-      transferableNFTLockers
+      transferableNFTLocker
     );
     _safeMint(holder, newItemId);
     emit NFTCreated(
@@ -184,7 +188,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
       rate,
       vestingAdmin,
       unlockDate,
-      transferableNFTLockers
+      transferableNFTLocker
     );
   }
 
@@ -285,7 +289,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     _burn(tokenId);
     TransferHelper.withdrawTokens(stream.token, vestingAdmin, remainder);
     if (stream.unlockDate > block.timestamp) {
-      mintLockedNFT(holder, stream.token, balance, stream.unlockDate, stream.transferableNFTLockers);
+      mintLockedNFT(holder, stream.token, balance, stream.unlockDate, stream.transferableNFTLocker);
     } else {
       TransferHelper.withdrawTokens(stream.token, holder, balance);
     }

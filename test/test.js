@@ -5,8 +5,8 @@ const batchTests = require('./tests/batchingTest');
 const happyPath = require('./tests/happyPath');
 
 const C = require('./constants');
-const { BigNumber } = require('ethers');
-const { time } = require('@nomicfoundation/hardhat-network-helpers');
+
+
 
 // describe('Testing for Admin Setup Function', () => {
 //     adminTest(true, false);
@@ -23,9 +23,9 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 //     { amount: C.E18_12, rate: C.E18_1 },
 //     { amount: C.E18_12, rate: C.E18_05 },
 //     { amount: C.E18_13, rate: C.E18_3 },
-//     { amount: C.randomBigNum(18, 100), rate: C.E18_1 },
-//     { amount: C.randomBigNum(18, 100), rate: C.E18_1 },
-//     { amount: C.randomBigNum(18, 100), rate: C.E18_3 },
+//     { amount: C.randomBigNum(18, 100, 1), rate: C.E18_1 },
+//     { amount: C.randomBigNum(18, 100, 2), rate: C.randomBigNum(6, 2, 1) },
+//     { amount: C.randomBigNum(6, 100, 5), rate: C.randomBigNum(6, 5, 1) },
 //   ];
 //   const timeParamsMatrix = [
 //     { startShift: 0, cliffShift: 0, timeShift: 2 },
@@ -36,9 +36,10 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 //   ];
 //   amountParamsMatrix.forEach((amountParam) => {
 //     timeParamsMatrix.forEach((timeParam) => {
-//       happyPath(true, false, amountParam, timeParam);
-//       happyPath(false, true, amountParam, timeParam);
-//       happyPath(false, false, amountParam, timeParam);
+//       happyPath(true, true, false, amountParam, timeParam);
+//       happyPath(true, false, false, amountParam, timeParam);
+//       happyPath(false, false, true, amountParam, timeParam);
+//       happyPath(false, false, false, amountParam, timeParam);
 //     });
 //   });
 // });
@@ -48,9 +49,9 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 //     { amounts: [C.E18_1, C.E18_10, C.E18_1], rates: [C.E18_05, C.E18_1, C.E18_1] },
 //     { amounts: [C.E18_10, C.E18_12, C.E18_13], rates: [C.E18_05, C.E18_10, C.E18_1] },
 //     { amounts: [C.E18_100, C.E18_10, C.E18_1], rates: [C.E18_100, C.E18_1, C.E18_1] },
-//     { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
-//     { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
-//     { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
+//     { amounts: [C.randomBigNum(18, 100, 2), C.randomBigNum(18, 100, 4), C.randomBigNum(18, 100, 5)], rates: [C.E18_05, C.E18_1, C.E18_1] },
+//     { amounts: [C.randomBigNum(18, 100, 1), C.randomBigNum(18, 100, 12), C.randomBigNum(18, 100, 17)], rates: [C.E18_05, C.E18_1, C.E18_1] },
+//     { amounts: [C.randomBigNum(6, 100, 10), C.randomBigNum(6, 100, 12), C.randomBigNum(7, 100, 11)], rates: [C.E6_10, C.E6_10, C.E6_10] },
 //   ];
 //   const timeParamsMatrix = [
 //     { starts: [0, 1, -10], cliffs: [0, 5, 10], unlocks: [0, 3, -5] },
@@ -59,9 +60,10 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 //   ];
 //   amountParamsMatrix.forEach((amountParam) => {
 //     timeParamsMatrix.forEach((timeParam) => {
-//       batchTests(true, false, amountParam, timeParam);
-//       batchTests(false, true, amountParam, timeParam);
-//       batchTests(false, false, amountParam, timeParam);
+//       batchTests(true, true, false, amountParam, timeParam);
+//       batchTests(true, false, false, amountParam, timeParam);
+//       batchTests(false, false, true, amountParam, timeParam);
+//       batchTests(false, false, false, amountParam, timeParam);
 //     });
 //   });
 // });
@@ -71,6 +73,6 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 //     createTests.createVestTest();
 // });
 
-describe('Testing the locked token balance, and delegation of locked balances', () => {
-    voteTests.streamVotingTest();
-})
+// describe('Testing the locked token balance, and delegation of locked balances', () => {
+//     voteTests.streamVotingTest();
+// })

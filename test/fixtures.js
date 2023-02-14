@@ -5,12 +5,30 @@ const C = require('./constants');
 async function setupVesting() {
   const [creator, a, b, c] = await ethers.getSigners();
   const streamLib = await ethers.deployContract('StreamLibrary');
+
+  const TransferLocker = await ethers.getContractFactory('StreamingHedgeys', {
+    libraries: {
+      StreamLibrary: streamLib.address,
+    },
+  });
+
+  const NoTransferLocker = await ethers.getContractFactory('StreamingBoundHedgeys', {
+    libraries: {
+      StreamLibrary: streamLib.address,
+    },
+  });
+
+  const transferLocker = await TransferLocker.deploy('StreamingHedgeys', 'STHD');
+  const notransferLocker = await NoTransferLocker.deploy('BoundHedgeys', 'BHDG');
+
   const Streaming = await ethers.getContractFactory('StreamVestingNFT', {
     libraries: {
       StreamLibrary: streamLib.address,
     },
   });
-  const streaming = await Streaming.deploy('Streamers', 'STMY');
+  const streaming = await Streaming.deploy('Streamers', 'STMY', transferLocker.address, notransferLocker.address);
+  
+  
 
   const BatchStreamer = await ethers.getContractFactory('BatchVester');
   const batchStreamer = await BatchStreamer.deploy();
@@ -32,6 +50,8 @@ async function setupVesting() {
     usdc,
     streaming,
     batchStreamer,
+    transferLocker,
+    notransferLocker,
   };
 }
 

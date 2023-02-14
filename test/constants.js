@@ -5,8 +5,9 @@ const bigMin = (a, b) => {
   else return b;
 };
 
-const randomBigNum = (base, max) => {
+const randomBigNum = (base, max, min) => {
   let num = Math.round(Math.random() * max);
+  num = Math.max(num, min);
   return BigNumber.from(10).pow(base).mul(num);
 };
 
