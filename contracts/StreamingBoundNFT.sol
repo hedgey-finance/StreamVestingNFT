@@ -115,13 +115,22 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
     emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate);
   }
 
+  /// @dev function to delegate specific tokens to another wallt for voting
+  /// @param delegate is the address of the wallet to delegate the NFTs to
+  /// @param tokenIds is the array of tokens that we want to delegate
+  function delegateToken(address delegate, uint[] memory tokenIds) external {
+    for (uint256 i; i < tokenIds.length; i++) {
+      _delegateToken(delegate, tokenIds[i]);
+    }
+  }
+
   /// @dev this function is to delegate all NFTs to another wallet address
   /// it pulls any tokens of the owner and delegates the NFT to the delegate address
   /// @param delegate is the address of the delegate
-  function delegateAll(address delegate) external {
+  function delegateAllNFTs(address delegate) external {
     for (uint256 i; i < balanceOf(msg.sender); i++) {
       uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
-      delegateToken(delegate, tokenId);
+      _delegateToken(delegate, tokenId);
     }
   }
   

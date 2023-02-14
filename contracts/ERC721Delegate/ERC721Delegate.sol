@@ -31,7 +31,7 @@ abstract contract ERC721Delegate is ERC721 {
 
   event TokenDelegated(uint256 indexed tokenId, address delegate);
 
-  function delegateToken(address delegate, uint256 tokenId) public {
+  function _delegateToken(address delegate, uint256 tokenId) internal {
     require(msg.sender == ERC721.ownerOf(tokenId),'!owner');
     address currentDelegate = _delegates[tokenId];
     _transferDelegate(currentDelegate, delegate, tokenId);

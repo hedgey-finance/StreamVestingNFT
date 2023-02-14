@@ -43,34 +43,34 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 //   });
 // });
 
-describe('Testing the Batch Minter contracts', () => {
-  const amountParamsMatrix = [
-    { amounts: [C.E18_1, C.E18_10, C.E18_1], rates: [C.E18_05, C.E18_1, C.E18_1] },
-    { amounts: [C.E18_10, C.E18_12, C.E18_13], rates: [C.E18_05, C.E18_10, C.E18_1] },
-    { amounts: [C.E18_100, C.E18_10, C.E18_1], rates: [C.E18_100, C.E18_1, C.E18_1] },
-    { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
-    { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
-    { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
-  ];
-  const timeParamsMatrix = [
-    { starts: [0, 1, -10], cliffs: [0, 5, 10], unlocks: [0, 3, -5] },
-    { starts: [-50, -100, -200], cliffs: [-50, -50, -50], unlocks: [-25, 0, -50] },
-    { starts: [50, 100, 200], cliffs: [75, 150, 500], unlocks: [100, 200, 1000] },
-  ];
-  amountParamsMatrix.forEach((amountParam) => {
-    timeParamsMatrix.forEach((timeParam) => {
-      batchTests(true, false, amountParam, timeParam);
-      batchTests(false, true, amountParam, timeParam);
-      batchTests(false, false, amountParam, timeParam);
-    });
-  });
-});
+// describe('Testing the Batch Minter contracts', () => {
+//   const amountParamsMatrix = [
+//     { amounts: [C.E18_1, C.E18_10, C.E18_1], rates: [C.E18_05, C.E18_1, C.E18_1] },
+//     { amounts: [C.E18_10, C.E18_12, C.E18_13], rates: [C.E18_05, C.E18_10, C.E18_1] },
+//     { amounts: [C.E18_100, C.E18_10, C.E18_1], rates: [C.E18_100, C.E18_1, C.E18_1] },
+//     { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
+//     { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
+//     { amounts: [C.randomBigNum(18, 100), C.randomBigNum(18, 100), C.randomBigNum(18, 100)], rates: [C.E18_05, C.E18_1, C.E18_1] },
+//   ];
+//   const timeParamsMatrix = [
+//     { starts: [0, 1, -10], cliffs: [0, 5, 10], unlocks: [0, 3, -5] },
+//     { starts: [-50, -100, -200], cliffs: [-50, -50, -50], unlocks: [-25, 0, -50] },
+//     { starts: [50, 100, 200], cliffs: [75, 150, 500], unlocks: [100, 200, 1000] },
+//   ];
+//   amountParamsMatrix.forEach((amountParam) => {
+//     timeParamsMatrix.forEach((timeParam) => {
+//       batchTests(true, false, amountParam, timeParam);
+//       batchTests(false, true, amountParam, timeParam);
+//       batchTests(false, false, amountParam, timeParam);
+//     });
+//   });
+// });
 
 // describe('Testing for minting new NFTs', () => {
 //     createTests.createStreamTest();
 //     createTests.createVestTest();
 // });
 
-// describe('Testing the locked token balance, and delegation of locked balances', () => {
-//     voteTests.streamVotingTest();
-// })
+describe('Testing the locked token balance, and delegation of locked balances', () => {
+    voteTests.streamVotingTest();
+})

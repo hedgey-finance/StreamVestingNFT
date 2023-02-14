@@ -72,7 +72,7 @@ const streamVotingTest = () => {
     const lockedAmount = stream.amount;
     const total = amount.add(C.E18_100);
 
-    expect(await streaming.connect(a).delegateToken(b.address, id))
+    expect(await streaming.connect(a).delegateToken(b.address, [id]))
       .to.emit('TokenDelegated')
       .withArgs(id, b.address);
 
@@ -96,7 +96,7 @@ const streamVotingTest = () => {
   });
   it('Wallet A delegates the token 2 back to itself', async () => {
     const id = '2';
-    expect(await streaming.connect(a).delegateToken(a.address, id))
+    expect(await streaming.connect(a).delegateToken(a.address, [id]))
       .to.emit('TokenDelegated')
       .withArgs(id, a.address);
     const lockedBalance = await streaming.lockedBalances(a.address, token.address);
@@ -170,7 +170,7 @@ const streamVotingTest = () => {
     // ids to delegate
     const c2 = '3';
     const c2Amount = (await streaming.streams(c2)).amount;
-    expect(await streaming.connect(a).delegateToken(c.address, c2))
+    expect(await streaming.connect(a).delegateToken(c.address, [c2]))
       .to.emit('TokenDelegated')
       .withArgs(c2, c.address);
     delegatdBalanceA = await streaming.delegatedBalances(a.address, token.address);
@@ -186,7 +186,7 @@ const streamVotingTest = () => {
       let tokenId = await streaming.tokenOfOwnerByIndex(a.address, i);
       atokens.push(tokenId);
     }
-    expect(await streaming.connect(a).delegateAll(creator.address))
+    expect(await streaming.connect(a).delegateAllNFTs(creator.address))
       .to.emit('TokenDelegated')
       .withArgs(atokens[0], creator.address);
 
@@ -247,7 +247,7 @@ const streamVotingTest = () => {
     await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate);
     const balanceOf = await streaming.balanceOf(creator.address);
     const tokenId = await streaming.tokenOfOwnerByIndex(creator.address, balanceOf - 1);
-    await streaming.delegateToken(c.address, tokenId);
+    await streaming.delegateToken(c.address, [tokenId]);
 
     const preLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
     const preDelegateBalance = await streaming.delegatedBalances(c.address, usdc.address);
@@ -291,7 +291,7 @@ const streamVotingTest = () => {
     const tx = await (await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate)).wait();
     const event = tx.events[tx.events.length - 1];
     const tokenId = event.args.id;
-    await streaming.delegateToken(c.address, tokenId);
+    await streaming.delegateToken(c.address, [tokenId]);
 
     const preDelegateBalance = await streaming.delegatedBalances(c.address, usdc.address);
 
