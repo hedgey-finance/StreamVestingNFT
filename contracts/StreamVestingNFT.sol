@@ -28,6 +28,8 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @dev admin for setting the baseURI;
   address private admin;
 
+  mapping(bool => address) private nftLockers;
+
   /// @dev the Stream is the storage in a struct of the tokens that are currently being streamed
   /// @dev token is the token address being streamed
   /// @dev amount is the total amount of tokens in the stream, which is comprised of the balance and the remainder
@@ -42,6 +44,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 rate;
     address vestingAdmin;
     uint256 unlockDate;
+    bool transferableNFTLockers;
   }
 
   mapping(uint256 => Stream) public streams;
@@ -57,7 +60,8 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 end,
     uint256 rate,
     address vestingAdmin,
-    uint256 unlockDate
+    uint256 unlockDate,
+    bool transferableNFTLockers
   );
 
   event NFTRevoked(uint256 indexed id, uint256 balance, uint256 remainder);
@@ -102,7 +106,29 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// If the start date of vest is prior to the cliff, then on the cliff anything vested from the start will immediately be vested at the cliffdate
   /// @param rate is the rate tokens are continuously vesting, in seconds
   /// @param vestingAdmin is the admin of the vesting contract who has the enormous power to revoke the vesting stream at any time prior to full vest date
-  /// @param unlockDate is the date that is optionally set for when the admin wants to enforce a lockup on vested tokens, so that even after vesting they are still locked
+  function createNFT(
+    address holder,
+    address token,
+    uint256 amount,
+    uint256 start,
+    uint256 cliffDate,
+    uint256 rate,
+    address vestingAdmin
+  ) external nonReentrant {
+    _createNFT(holder, token, amount, start, cliffDate, rate, vestingAdmin, 0, false);
+  }
+
+  /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens
+  /// @param holder is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
+  /// @param token is the token address of the tokens that will be vesting inside the stream
+  /// @param amount is the total amount of tokens to be locked and vesting for the duration of the streaming unlock period
+  /// @param start is the start date for when the tokens start to become vested, this can be past dated, present or futured dated using unix timestamp
+  /// @param cliffDate is an optional paramater to allow a future single cliff date where tokens will be vested.
+  /// If the start date of vest is prior to the cliff, then on the cliff anything vested from the start will immediately be vested at the cliffdate
+  /// @param rate is the rate tokens are continuously vesting, in seconds
+  /// @param vestingAdmin is the admin of the vesting contract who has the enormous power to revoke the vesting stream at any time prior to full vest date
+  /// @param unlockDate is an optional field to insert a date that vested tokens unlock after. In the case of tokens being revoked, they will be transferred to another Hedgey NFT
+  /// @param transferableNFTLockers is a bool that describes if vested tokens, when still locked and  get revoked, mint a hedgey NFT that is transferrable or not transferrable
   function createNFT(
     address holder,
     address token,
@@ -111,8 +137,23 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 cliffDate,
     uint256 rate,
     address vestingAdmin,
-    uint256 unlockDate
+    uint256 unlockDate,
+    bool transferableNFTLockers
   ) external nonReentrant {
+    _createNFT(holder, token, amount, start, cliffDate, rate, vestingAdmin, unlockDate, transferableNFTLockers);
+  }
+
+  function _createNFT(
+    address holder,
+    address token,
+    uint256 amount,
+    uint256 start,
+    uint256 cliffDate,
+    uint256 rate,
+    address vestingAdmin,
+    uint256 unlockDate,
+    bool transferableNFTLockers
+  ) internal {
     require(holder != address(0) && holder != vestingAdmin, 'SV02');
     require(token != address(0), 'SV03');
     require(amount > 0, 'SV04');
@@ -121,15 +162,36 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
-    streams[newItemId] = Stream(token, amount, start, cliffDate, rate, vestingAdmin, unlockDate);
+    streams[newItemId] = Stream(
+      token,
+      amount,
+      start,
+      cliffDate,
+      rate,
+      vestingAdmin,
+      unlockDate,
+      transferableNFTLockers
+    );
     _safeMint(holder, newItemId);
-    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate, vestingAdmin, unlockDate);
+    emit NFTCreated(
+      newItemId,
+      holder,
+      token,
+      amount,
+      start,
+      cliffDate,
+      end,
+      rate,
+      vestingAdmin,
+      unlockDate,
+      transferableNFTLockers
+    );
   }
 
   /// @dev function to delegate specific tokens to another wallt for voting
   /// @param delegate is the address of the wallet to delegate the NFTs to
   /// @param tokenIds is the array of tokens that we want to delegate
-  function delegateToken(address delegate, uint[] memory tokenIds) external {
+  function delegateToken(address delegate, uint256[] memory tokenIds) external {
     for (uint256 i; i < tokenIds.length; i++) {
       _delegateToken(delegate, tokenIds[i]);
     }
@@ -223,7 +285,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     _burn(tokenId);
     TransferHelper.withdrawTokens(stream.token, vestingAdmin, remainder);
     if (stream.unlockDate > block.timestamp) {
-      mintLockedNFT(holder, stream.token, balance, stream.unlockDate);
+      mintLockedNFT(holder, stream.token, balance, stream.unlockDate, stream.transferableNFTLockers);
     } else {
       TransferHelper.withdrawTokens(stream.token, holder, balance);
     }
@@ -240,13 +302,12 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     address holder,
     address token,
     uint256 amount,
-    uint256 unlockDate
+    uint256 unlockDate,
+    bool transferableNFTLockers
   ) internal {
-    _tokenIds.increment();
-    uint256 newItemId = _tokenIds.current();
-    streams[newItemId] = Stream(token, amount, unlockDate, 0, amount, address(0), unlockDate);
-    _safeMint(holder, newItemId);
-    emit NFTCreated(newItemId, holder, token, amount, unlockDate, 0, unlockDate, amount, address(0), unlockDate);
+    address nftLocker = nftLockers[transferableNFTLockers];
+    SafeERC20.safeIncreaseAllowance(IERC20(token), nftLocker, amount);
+    IStreamNFT(nftLocker).createNFT(holder, token, amount, unlockDate, unlockDate, amount);
   }
 
   /// @dev funtion to get the current balance and remainder of a given stream, using the current block time
