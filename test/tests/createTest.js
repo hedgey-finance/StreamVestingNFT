@@ -1,15 +1,54 @@
 const { expect } = require('chai');
-const { setupStreaming, setupVesting } = require('../fixtures');
+const { setupStreaming, setupVesting, setupBoundStreaming } = require('../fixtures');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const C = require('../constants');
 const { BigNumber } = require('ethers');
 
- const createStreamTest = () => {
-  let streaming, creator, a, b, c, token, usdc;
-  let amount, start, cliff, rate, end;
+/**  create tests need to: 
+1. Test basic create with various amounts rates, start dates, cliffs, unlocks dates
+  - check the balance of the contract after matches the amount
+  - check the struct held in storage matches
+  - check the events spit off properly
+  - check moving forward in time that the balances are what the should be
+  - check the end date calculation
+  ... should have a mix of streams and single date vests as well, before, at now, and in future
+2. Reverting tests
+  - check it reverts if the allowance is 0
+  - check it reverts if the holder is 0 address (or manager is holder for vesting)
+  - check it reverts if the token address is 0
+  - check it reverts if the rate is 0 and rate is greater than the amount
+*/
+const calculatedBalance = (start, cliff, amount, rate, time) => {
+  let remainder = C.ZERO;
+  let balance = C.ZERO;
+  if (start >= time || cliff >= time) {
+    remainder = amount;
+    balance = 0;
+  } else {
+    let streamed = BigNumber.from(time).sub(start).mul(rate);
+    balance = C.bigMin(streamed, amount);
+    remainder = amount.sub(balance);
+  }
+  return {
+    balance,
+    remainder,
+  };
+};
 
-  it('Creates a new streaming NFT for wallet A', async () => {
-    const s = await setupStreaming();
+const createTests = (vesting, locked, bound, amountParams, timeParams) => {
+  let s, streaming, creator, a, b, c, token;
+  let amount, now, start, cliff, rate, admin, unlock, transferLock, timeShift;
+  it(`Creator Mints a ${vesting ? 'vesting' : 'streaming'} NFT to wallet A with ${ethers.utils.formatEther(
+    amountParams.amount
+  )} at a rate of ${ethers.utils.formatEther(amountParams.rate)}`, async () => {
+    if (vesting == true) {
+      s = await setupVesting();
+    } else if (bound == true) {
+      s = await setupBoundStreaming();
+    } else {
+      s = await setupStreaming();
+    }
+    now = await time.latest();
     streaming = s.streaming;
     creator = s.creator;
     a = s.a;
@@ -17,215 +56,268 @@ const { BigNumber } = require('ethers');
     c = s.c;
     token = s.token;
     usdc = s.usdc;
-    amount = C.E18_100;
-    rate = C.E18_1;
-    start = await time.latest();
-    cliff = start;
-    end = start + amount.div(rate);
-    expect(await streaming.createNFT(a.address, token.address, amount, start, cliff, rate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate);
-    expect(await token.balanceOf(streaming.address)).to.eq(amount);
-    expect(await streaming.balanceOf(a.address)).to.eq(1);
-    //increase time to check updated balances
-    await time.increase(10);
-    const streamValues = await streaming.streamBalanceOf('1');
-    const passedSeconds = (await time.latest()) - start;
-    const remainder = amount.sub(rate.mul(passedSeconds));
-    const streamBal = amount.sub(remainder);
-    expect(streamValues[1]).to.eq(remainder);
-    expect(streamValues[0]).to.eq(streamBal);
-  });
-  it('Creates an NFT that streams in a single second block', async () => {
-    rate = amount;
-    start = (await time.latest()) + 60;
-    cliff = start;
-    end = start + amount.div(rate);
-    expect(await streaming.createNFT(a.address, token.address, amount, start, cliff, rate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate);
-    // progress 59 seconds and check remainder is still total amount
-    await time.increase(59);
-    let streamValues = await streaming.streamBalanceOf('2');
-    expect(streamValues[1]).to.eq(amount);
-    expect(streamValues[0]).to.eq(0);
-    // move 1 second to see that its flipped entirley to available now
-    await time.increase(1);
-    streamValues = await streaming.streamBalanceOf('2');
-    expect(streamValues[1]).to.eq(0);
-    expect(streamValues[0]).to.eq(amount);
-  });
-  it('Creates an NFT with a back-dated start and cliff date', async () => {
-    rate = C.E18_1;
-    start = (await time.latest()) - 40;
-    cliff = start;
-    end = start + amount.div(rate);
-    expect(await streaming.createNFT(a.address, token.address, amount, start, cliff, rate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate);
-    // expecting that 40 of the tokens are in balance and 60 in streaming
-    const streamValues = await streaming.streamBalanceOf('3');
-    const passedSeconds = (await time.latest()) - start;
-    const remainder = amount.sub(rate.mul(passedSeconds));
-    const streamBal = amount.sub(remainder);
-    expect(streamValues[1]).to.eq(remainder);
-    expect(streamValues[0]).to.eq(streamBal);
-  });
-  it('Creates an NFT with back dated start date, and future cliff vesting date', async () => {
-    rate = C.E18_1;
-    start = (await time.latest()) - 10;
-    cliff = start + 30;
-    end = start + amount.div(rate);
-    expect(await streaming.createNFT(a.address, token.address, amount, start, cliff, rate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate);
-    // expecting that its 0 till cliff has passed
-    let streamValues = await streaming.streamBalanceOf('4');
-    expect(streamValues[1]).to.eq(amount);
-    expect(streamValues[0]).to.eq(0);
-    // move up 20 seconds post cliff time
-    await time.increase(20);
-    const passedSeconds = (await time.latest()) - start;
-    streamValues = await streaming.streamBalanceOf('4');
-    const remainder = amount.sub(rate.mul(passedSeconds));
-    const streamBal = amount.sub(remainder);
-    expect(streamValues[1]).to.eq(remainder);
-    expect(streamValues[0]).to.eq(streamBal);
-  });
-  it('Will revert if the allowance is amount is 0', async () => {
-    await expect(streaming.createNFT(a.address, token.address, 0, start, cliff, rate)).to.be
-      .reverted;
-  });
-  it('Will revert if the holder address is 0', async () => {
-    await expect(streaming.createNFT(C.ZERO_ADDRESS, token.address, amount, start, cliff, rate)).to
-      .be.reverted;
-  });
-  it('Will revert if the token address is the 0 address', async () => {
-    await expect(streaming.createNFT(a.address, C.ZERO_ADDRESS, amount, start, cliff, rate)).to.be
-      .reverted;
-  });
-  it('Will revert if the rate is 0 or greater than the amount', async () => {
-    await expect(streaming.createNFT(a.address, token.address, amount, start, cliff, 0)).to.be
-      .reverted;
-    await expect(
-      streaming.createNFT(a.address, token.address, amount, start, cliff, amount.add(10))
-    ).to.be.reverted;
+    amount = amountParams.amount;
+    rate = amountParams.rate;
+    start = timeParams.startShift + now;
+    cliff = timeParams.cliffShift + now;
+    transferLock = timeParams.transferLock;
+    timeShift = timeParams.timeShift;
+    admin = creator.address;
+    unlock = timeParams.unlockShift + now;
+    let end = amount.div(rate).add(start);
+    end = amount.mod(rate) == 0 ? end : end.add(1);
+    if (vesting) {
+      if (locked) {
+        const tx = await streaming.createLockedNFT(
+          a.address,
+          token.address,
+          amount,
+          start,
+          cliff,
+          rate,
+          admin,
+          unlock,
+          transferLock
+        );
+        expect(tx)
+          .to.emit('NFTCreated')
+          .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, admin, unlock, transferLock);
+        const tokenBalance = await token.balanceOf(streaming.address);
+        expect(tokenBalance).to.eq(amount);
+        const stream = await streaming.streams('1');
+        expect(stream.token).to.eq(token.address);
+        expect(stream.amount).to.eq(amount);
+        expect(stream.start).to.eq(start);
+        expect(stream.cliffDate).to.eq(cliff);
+        expect(stream.rate).to.eq(rate);
+        expect(stream.vestingAdmin).to.eq(admin);
+        expect(stream.unlockDate).to.eq(unlock);
+        expect(stream.transferableNFTLocker).to.eq(transferLock);
+
+        expect(await streaming.getStreamEnd('1')).to.eq(end);
+        // balance checks of NFT
+        expect(await streaming.balanceOf(a.address)).to.eq('1');
+        expect(await streaming.ownerOf('1')).to.eq(a.address);
+
+        let currentTime = await time.latest();
+        // checks for streaming balances
+        let calcBalances = calculatedBalance(start, cliff, amount, rate, currentTime);
+        let streamBalanceOf = await streaming.streamBalanceOf('1');
+        expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
+        expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
+
+        // move forward in time and check
+        let newTime = await time.increase(timeShift);
+        calcBalances = calculatedBalance(start, cliff, amount, rate, newTime);
+        streamBalanceOf = await streaming.streamBalanceOf('1');
+        expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
+        expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
+      } else {
+        const tx = await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, admin);
+        expect(tx)
+          .to.emit('NFTCreated')
+          .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, admin, '0', false);
+        const tokenBalance = await token.balanceOf(streaming.address);
+        expect(tokenBalance).to.eq(amount);
+        const stream = await streaming.streams('1');
+        expect(stream.token).to.eq(token.address);
+        expect(stream.amount).to.eq(amount);
+        expect(stream.start).to.eq(start);
+        expect(stream.cliffDate).to.eq(cliff);
+        expect(stream.rate).to.eq(rate);
+        expect(stream.vestingAdmin).to.eq(admin);
+        expect(stream.unlockDate).to.eq(0);
+        expect(stream.transferableNFTLocker).to.eq(false);
+
+        expect(await streaming.getStreamEnd('1')).to.eq(end);
+        // balance checks of NFT
+        expect(await streaming.balanceOf(a.address)).to.eq('1');
+        expect(await streaming.ownerOf('1')).to.eq(a.address);
+
+        let currentTime = await time.latest();
+        // checks for streaming balances
+        let calcBalances = calculatedBalance(start, cliff, amount, rate, currentTime);
+        let streamBalanceOf = await streaming.streamBalanceOf('1');
+        expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
+        expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
+
+        let newTime = await time.increase(timeShift);
+        calcBalances = calculatedBalance(start, cliff, amount, rate, newTime);
+        streamBalanceOf = await streaming.streamBalanceOf('1');
+        expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
+        expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
+      }
+    } else {
+      const tx = await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
+      expect(tx).to.emit('NFTCreated').withArgs('1', a.address, token.address, amount, start, cliff, end, rate);
+      const tokenBalance = await token.balanceOf(streaming.address);
+      expect(tokenBalance).to.eq(amount);
+      const stream = await streaming.streams('1');
+      expect(stream.token).to.eq(token.address);
+      expect(stream.amount).to.eq(amount);
+      expect(stream.start).to.eq(start);
+      expect(stream.cliffDate).to.eq(cliff);
+      expect(stream.rate).to.eq(rate);
+
+      expect(await streaming.getStreamEnd('1')).to.eq(end);
+      // balance checks of NFT
+      expect(await streaming.balanceOf(a.address)).to.eq('1');
+      expect(await streaming.ownerOf('1')).to.eq(a.address);
+
+      let currentTime = await time.latest();
+      // checks for streaming balances
+      let calcBalances = calculatedBalance(start, cliff, amount, rate, currentTime);
+      let streamBalanceOf = await streaming.streamBalanceOf('1');
+      expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
+      expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
+
+      let newTime = await time.increase(timeShift);
+      calcBalances = calculatedBalance(start, cliff, amount, rate, newTime);
+      streamBalanceOf = await streaming.streamBalanceOf('1');
+      expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
+      expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
+    }
   });
 };
 
-const createVestTest = () => {
-  let vesting, creator, a, b, c, token, usdc;
-  let amount, start, cliff, rate, end, manager, unlockDate;
-
-  it('Creates a new vesting NFT for wallet A', async () => {
-    const v = await setupVesting();
-    vesting = v.vesting;
-    creator = v.creator;
-    manager = creator.address;
-    a = v.a;
-    b = v.b;
-    c = v.c;
-    token = v.token;
-    usdc = v.usdc;
-    amount = C.E18_100;
-    rate = C.E18_1;
+const createErrorTests = (vesting, locked, bound) => {
+  let s, streaming, creator, a, b, c, token;
+  let amount, start, cliff, rate, admin, unlock;
+  it(`reverts if the allowance is 0 of the minter`, async () => {
+    if (vesting == true) {
+      s = await setupVesting();
+    } else if (bound == true) {
+      s = await setupBoundStreaming();
+    } else {
+      s = await setupStreaming();
+    }
+    now = await time.latest();
+    streaming = s.streaming;
+    creator = s.creator;
+    a = s.a;
+    b = s.b;
+    c = s.c;
+    token = s.token;
+    amount = C.E18_1;
     start = await time.latest();
     cliff = start;
-    end = start + amount.div(rate);
-    unlockDate = '0';
-    expect(await vesting.createNFT(a.address, token.address, amount, start, cliff, rate, manager, unlockDate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, manager);
-    expect(await token.balanceOf(vesting.address)).to.eq(amount);
-    expect(await vesting.balanceOf(a.address)).to.eq(1);
-    //increase time to check updated balances
-    await time.increase(10);
-    const vestingValues = await vesting.streamBalanceOf('1');
-    const passedSeconds = (await time.latest()) - start;
-    const remainder = amount.sub(rate.mul(passedSeconds));
-    const streamBal = amount.sub(remainder);
-    expect(vestingValues[1]).to.eq(remainder);
-    expect(vestingValues[0]).to.eq(streamBal);
-  });
-  it('Creates an NFT that streams in a single second block', async () => {
     rate = amount;
-    start = (await time.latest()) + 60;
-    cliff = start;
-    end = start + amount.div(rate);
-    expect(await vesting.createNFT(a.address, token.address, amount, start, cliff, rate, manager, unlockDate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, manager, unlockDate);
-    // progress 59 seconds and check remainder is still total amount
-    await time.increase(59);
-    let vestingValues = await vesting.streamBalanceOf('2');
-    expect(vestingValues[1]).to.eq(amount);
-    expect(vestingValues[0]).to.eq(0);
-    // move 1 second to see that its flipped entirley to available now
-    await time.increase(1);
-    vestingValues = await vesting.streamBalanceOf('2');
-    expect(vestingValues[1]).to.eq(0);
-    expect(vestingValues[0]).to.eq(amount);
+    admin = creator.address;
+    unlock = start;
+
+    if (vesting) {
+      if (locked) {
+        await expect(
+          streaming
+            .connect(a)
+            .createLockedNFT(a.address, token.address, amount, start, cliff, rate, admin, unlock, false)
+        ).to.be.revertedWith('THL01');
+      } else {
+        await expect(
+          streaming.connect(a).createNFT(a.address, token.address, amount, start, cliff, rate, admin)
+        ).to.be.revertedWith('THL01');
+      }
+    } else {
+      await expect(
+        streaming.connect(a).createNFT(a.address, token.address, amount, start, cliff, rate)
+      ).to.be.revertedWith('THL01');
+    }
   });
-  it('Creates an NFT with a back-dated start and cliff date', async () => {
-    rate = C.E18_1;
-    start = (await time.latest()) - 40;
-    cliff = start;
-    end = start + amount.div(rate);
-    expect(await vesting.createNFT(a.address, token.address, amount, start, cliff, rate, manager, unlockDate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, manager, unlockDate);
-    // expecting that 40 of the tokens are in balance and 60 in vesting
-    const vestingValues = await vesting.streamBalanceOf('3');
-    const passedSeconds = (await time.latest()) - start;
-    const remainder = amount.sub(rate.mul(passedSeconds));
-    const streamBal = amount.sub(remainder);
-    expect(vestingValues[1]).to.eq(remainder);
-    expect(vestingValues[0]).to.eq(streamBal);
+  it(`reverts if the holder is the 0 address or manager is the same as the minter`, async () => {
+    if (vesting) {
+      if (locked) {
+        await expect(
+          streaming.createLockedNFT(C.ZERO_ADDRESS, token.address, amount, start, cliff, rate, admin, unlock, false)
+        ).to.be.revertedWith('SV02');
+        await expect(
+          streaming.createLockedNFT(a.address, token.address, amount, start, cliff, rate, a.address, unlock, false)
+        ).to.be.revertedWith('SV02');
+      } else {
+        await expect(
+          streaming.createNFT(C.ZERO_ADDRESS, token.address, amount, start, cliff, rate, admin)
+        ).to.be.revertedWith('SV02');
+        await expect(
+          streaming.createNFT(a.address, token.address, amount, start, cliff, rate, a.address)
+        ).to.be.revertedWith('SV02');
+      }
+    } else {
+      await expect(streaming.createNFT(C.ZERO_ADDRESS, token.address, amount, start, cliff, rate)).to.be.revertedWith(
+        'SV02'
+      );
+    }
   });
-  it('Creates an NFT with back dated start date, and future cliff vesting date', async () => {
-    rate = C.E18_1;
-    start = (await time.latest()) - 10;
-    cliff = start + 30;
-    end = start + amount.div(rate);
-    expect(await vesting.createNFT(a.address, token.address, amount, start, cliff, rate, manager, unlockDate))
-      .to.emit('NFTCreated')
-      .withArgs('1', a.address, token.address, amount, start, cliff, end, rate, manager, unlockDate);
-    // expecting that its 0 till cliff has passed
-    let vestingValues = await vesting.streamBalanceOf('4');
-    expect(vestingValues[1]).to.eq(amount);
-    expect(vestingValues[0]).to.eq(0);
-    // move up 20 seconds post cliff time
-    await time.increase(20);
-    const passedSeconds = (await time.latest()) - start;
-    vestingValues = await vesting.streamBalanceOf('4');
-    const remainder = amount.sub(rate.mul(passedSeconds));
-    const streamBal = amount.sub(remainder);
-    expect(vestingValues[1]).to.eq(remainder);
-    expect(vestingValues[0]).to.eq(streamBal);
+  it(`reverts if the token address is 0`, async () => {
+    let tokenAddress = C.ZERO_ADDRESS;
+    if (vesting) {
+      if (locked) {
+        await expect(
+          streaming.createLockedNFT(a.address, tokenAddress, amount, start, cliff, rate, admin, unlock, false)
+        ).to.be.revertedWith('SV03');
+      } else {
+        await expect(
+          streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate, admin)
+        ).to.be.revertedWith('SV03');
+      }
+    } else {
+      await expect(streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate)).to.be.revertedWith('SV03');
+    }
   });
-  it('Will revert if the allowance is amount is 0', async () => {
-    await expect(vesting.createNFT(a.address, token.address, 0, start, cliff, rate, manager, unlockDate)).to.be
-      .reverted;
+  it(`reverts if the amount is 0`, async () => {
+    let tokenAddress = token.address;
+    amount = C.ZERO;
+    if (vesting) {
+      if (locked) {
+        await expect(
+          streaming.createLockedNFT(a.address, tokenAddress, amount, start, cliff, rate, admin, unlock, false)
+        ).to.be.revertedWith('SV04');
+      } else {
+        await expect(
+          streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate, admin)
+        ).to.be.revertedWith('SV04');
+      }
+    } else {
+      await expect(streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate)).to.be.revertedWith('SV04');
+    }
   });
-  it('Will revert if the holder address is 0', async () => {
-    await expect(vesting.createNFT(C.ZERO_ADDRESS, token.address, amount, start, cliff, rate, manager, unlockDate)).to
-      .be.reverted;
+  it(`reverts if the rate is 0`, async () => {
+    let tokenAddress = token.address;
+    amount = C.E18_1;
+    rate = C.ZERO;
+    if (vesting) {
+      if (locked) {
+        await expect(
+          streaming.createLockedNFT(a.address, tokenAddress, amount, start, cliff, rate, admin, unlock, false)
+        ).to.be.revertedWith('SV05');
+      } else {
+        await expect(
+          streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate, admin)
+        ).to.be.revertedWith('SV05');
+      }
+    } else {
+      await expect(streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate)).to.be.revertedWith('SV05');
+    }
   });
-  it('Will revert if the token address is the 0 address', async () => {
-    await expect(vesting.createNFT(a.address, C.ZERO_ADDRESS, amount, start, cliff, rate, manager, unlockDate)).to.be
-      .reverted;
-  });
-  it('Will revert if the rate is 0 or greater than the amount', async () => {
-    await expect(vesting.createNFT(a.address, token.address, amount, start, cliff, 0, manager, unlockDate)).to.be
-      .reverted;
-    await expect(
-      vesting.createNFT(a.address, token.address, amount, start, cliff, amount.add(10), manager, unlockDate)
-    ).to.be.reverted;
+  it(`reverts if the rate is greater than the amount`, async () => {
+    let tokenAddress = token.address;
+    amount = C.E18_1;
+    rate = C.E18_10;
+    if (vesting) {
+      if (locked) {
+        await expect(
+          streaming.createLockedNFT(a.address, tokenAddress, amount, start, cliff, rate, admin, unlock, false)
+        ).to.be.revertedWith('SV05');
+      } else {
+        await expect(
+          streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate, admin)
+        ).to.be.revertedWith('SV05');
+      }
+    } else {
+      await expect(streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate)).to.be.revertedWith('SV05');
+    }
   });
 };
-
 
 module.exports = {
-  createStreamTest,
-  createVestTest,
-}
+  createTests,
+  createErrorTests,
+};
