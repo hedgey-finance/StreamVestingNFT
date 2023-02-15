@@ -1,8 +1,8 @@
 const adminTest = require('./tests/adminTest');
-const { createTests, createErrorTests } = require('./tests/createTest');
-const voteTests = require('./tests/votingTests');
-const { batchTests, batchErrorTests } = require('./tests/batchingTest');
 const happyPath = require('./tests/happyPath');
+const { createTests, createErrorTests } = require('./tests/createTest');
+const { batchTests, batchErrorTests } = require('./tests/batchingTest');
+
 
 const C = require('./constants');
 
@@ -42,6 +42,45 @@ const C = require('./constants');
 //   });
 // });
 
+
+// describe('Testin the primary Create NFT functions with various params', () => {
+//   const amountParamsMatrix = [
+//     { amount: C.E18_10, rate: C.E18_1 },
+//     { amount: C.E18_1, rate: C.E18_1 },
+//     { amount: C.E18_100, rate: C.E18_1 },
+//     { amount: C.E18_1000, rate: C.E18_13 },
+//     { amount: C.randomBigNum(18, 10000, 50), rate: C.randomBigNum(18, 50, 1) },
+//     { amount: C.randomBigNum(18, 100, 4), rate: C.randomBigNum(17, 40, 3) },
+//     { amount: C.randomBigNum(18, 200, 30), rate: C.randomBigNum(16, 30, 1) },
+//     { amount: C.randomBigNum(18, 10000, 50), rate: C.randomBigNum(15, 50, 1) },
+//     { amount: C.randomBigNum(12, 100, 5), rate: C.randomBigNum(12, 5, 1) },
+//     { amount: C.randomBigNum(13, 1000, 50), rate: C.randomBigNum(12, 50, 1) },
+//     { amount: C.randomBigNum(6, 100, 10), rate: C.randomBigNum(6, 10, 3) },
+//   ];
+//   const timeParamsMatrix = [
+//     { startShift: 0, cliffShift: 0, unlockShift: 0, transferLock: true, timeShift: 5 },
+//     { startShift: 0, cliffShift: 15, unlockShift: 10, transferLock: true, timeShift: 5 },
+//     { startShift: 10, cliffShift: 0, unlockShift: 0, transferLock: true, timeShift: 5 },
+//     { startShift: 10, cliffShift: 15, unlockShift: 12, transferLock: true, timeShift: 11 },
+//     { startShift: -10, cliffShift: 0, unlockShift: 5, transferLock: true, timeShift: 1 },
+//     { startShift: -50, cliffShift: -25, unlockShift: -50, transferLock: true, timeShift: 1 },
+//     { startShift: -5, cliffShift: -5, unlockShift: 0, transferLock: true, timeShift: 5 },
+//     { startShift: -10, cliffShift: -10, unlockShift: 0, transferLock: true, timeShift: 5 }
+//   ];
+//   amountParamsMatrix.forEach((amountParam) => {
+//     timeParamsMatrix.forEach((timeParam) => {
+//       createTests(true, true, false, amountParam, timeParam);
+//       createTests(true, false, false, amountParam, timeParam);
+//       createTests(false, false, false, amountParam, timeParam);
+//       createTests(false, false, true, amountParam, timeParam);
+//     });
+//   });
+//   createErrorTests(true, true, false);
+//   createErrorTests(true, false, false);
+//   createErrorTests(false, false, false);
+//   createErrorTests(false, false, true);
+// });
+
 // describe('Testing the Batch Minter contracts', () => {
 //   const amountParamsMatrix = [
 //     { amounts: [C.E18_1, C.E18_10, C.E18_1], rates: [C.E18_05, C.E18_1, C.E18_1] },
@@ -70,43 +109,6 @@ const C = require('./constants');
 //   batchErrorTests(false, false, false);
 // });
 
-describe('Testin the primary Create NFT functions with various params', () => {
-  const amountParamsMatrix = [
-    { amount: C.E18_10, rate: C.E18_1 },
-    { amount: C.E18_1, rate: C.E18_1 },
-    { amount: C.E18_100, rate: C.E18_1 },
-    { amount: C.E18_1000, rate: C.E18_13 },
-    { amount: C.randomBigNum(18, 10000, 50), rate: C.randomBigNum(18, 50, 1) },
-    { amount: C.randomBigNum(18, 100, 4), rate: C.randomBigNum(17, 40, 3) },
-    { amount: C.randomBigNum(18, 200, 30), rate: C.randomBigNum(16, 30, 1) },
-    { amount: C.randomBigNum(18, 10000, 50), rate: C.randomBigNum(15, 50, 1) },
-    { amount: C.randomBigNum(12, 100, 5), rate: C.randomBigNum(12, 5, 1) },
-    { amount: C.randomBigNum(13, 1000, 50), rate: C.randomBigNum(12, 50, 1) },
-    { amount: C.randomBigNum(6, 100, 10), rate: C.randomBigNum(6, 10, 3) },
-  ];
-  const timeParamsMatrix = [
-    { startShift: 0, cliffShift: 0, unlockShift: 0, transferLock: true, timeShift: 5 },
-    { startShift: 0, cliffShift: 15, unlockShift: 10, transferLock: true, timeShift: 5 },
-    { startShift: 10, cliffShift: 0, unlockShift: 0, transferLock: true, timeShift: 5 },
-    { startShift: 10, cliffShift: 15, unlockShift: 12, transferLock: true, timeShift: 11 },
-    { startShift: -10, cliffShift: 0, unlockShift: 5, transferLock: true, timeShift: 1 },
-    { startShift: -50, cliffShift: -25, unlockShift: -50, transferLock: true, timeShift: 1 },
-    { startShift: -5, cliffShift: -5, unlockShift: 0, transferLock: true, timeShift: 5 },
-    { startShift: -10, cliffShift: -10, unlockShift: 0, transferLock: true, timeShift: 5 }
-  ];
-//   amountParamsMatrix.forEach((amountParam) => {
-//     timeParamsMatrix.forEach((timeParam) => {
-//       createTests(true, true, false, amountParam, timeParam);
-//       createTests(true, false, false, amountParam, timeParam);
-//       createTests(false, false, false, amountParam, timeParam);
-//       createTests(false, false, true, amountParam, timeParam);
-//     });
-//   });
-  createErrorTests(true, true, false);
-  createErrorTests(true, false, false);
-  createErrorTests(false, false, false);
-  createErrorTests(false, false, true);
-});
 
 // describe('Testing the locked token balance, and delegation of locked balances', () => {
 //     voteTests.streamVotingTest();
