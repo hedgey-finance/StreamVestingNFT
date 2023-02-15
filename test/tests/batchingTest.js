@@ -60,7 +60,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           transferLocker
         );
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          expect(tx)
+          await expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -90,7 +90,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           creator.address
         );
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          expect(tx)
+          await expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -118,7 +118,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
         amountParams.rates
       );
       for (let i = 0; i < amountParams.amounts.length; i++) {
-        expect(tx)
+        await expect(tx)
           .to.emit('NFTCreated')
           .withArgs(
             i + 1,
@@ -176,9 +176,9 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           transferLocker,
           mintType
         );
-        expect(tx).to.emit('BatchCreated').withArgs(mintType);
+        await expect(tx).to.emit('BatchCreated').withArgs(mintType);
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          expect(tx)
+          await expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -208,9 +208,9 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           creator.address,
           mintType
         );
-        expect(tx).to.emit('BatchCreated').withArgs(mintType);
+        await expect(tx).to.emit('BatchCreated').withArgs(mintType);
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          expect(tx)
+          await expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -239,9 +239,9 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
         amountParams.rates,
         mintType
       );
-      expect(tx).to.emit('BatchCreated').withArgs(mintType);
+      await expect(tx).to.emit('BatchCreated').withArgs(mintType);
       for (let i = 0; i < amountParams.amounts.length; i++) {
-        expect(tx)
+        await expect(tx)
           .to.emit('NFTCreated')
           .withArgs(
             i + 1,
@@ -291,7 +291,7 @@ const batchErrorTests = (vesting, locked, bound) => {
           if (i == 2) starts.push(now);
           if (i == 3) cliffs.push(0);
           if (i == 4) rates.push(C.E18_05);
-          expect(
+          await expect(
             batcher[
               'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool)'
             ](
@@ -313,7 +313,7 @@ const batchErrorTests = (vesting, locked, bound) => {
           if (i == 1) amounts.push(C.E18_1);
           if (i == 2) starts.push(now);
           if (i == 3) cliffs.push(0);
-          expect(
+          await expect(
             batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address)'](
               streaming.address,
               recipients,
@@ -332,7 +332,7 @@ const batchErrorTests = (vesting, locked, bound) => {
         if (i == 1) amounts.push(C.E18_1);
         if (i == 2) starts.push(now);
         if (i == 3) cliffs.push(0);
-        expect(
+        await expect(
           batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[])'](
             streaming.address,
             recipients,
@@ -357,7 +357,7 @@ const batchErrorTests = (vesting, locked, bound) => {
     let transferlock = true;
     if (vesting) {
       if (locked) {
-        expect(
+        await expect(
           batcher[
             'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool)'
           ](
@@ -374,7 +374,7 @@ const batchErrorTests = (vesting, locked, bound) => {
           )
         ).to.be.revertedWith('SV04');
       } else {
-        expect(
+        await expect(
           batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address)'](
             streaming.address,
             recipients,
@@ -388,7 +388,7 @@ const batchErrorTests = (vesting, locked, bound) => {
         ).to.be.revertedWith('SV04');
       }
     } else {
-      expect(
+      await expect(
         batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[])'](
           streaming.address,
           recipients,
@@ -412,7 +412,7 @@ const batchErrorTests = (vesting, locked, bound) => {
     let transferlock = true;
     if (vesting) {
       if (locked) {
-        expect(
+        await expect(
           batcher[
             'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool)'
           ](
@@ -429,7 +429,7 @@ const batchErrorTests = (vesting, locked, bound) => {
           )
         ).to.be.revertedWith('SV02');
       } else {
-        expect(
+        await expect(
           batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address)'](
             streaming.address,
             recipients,
@@ -443,7 +443,7 @@ const batchErrorTests = (vesting, locked, bound) => {
         ).to.be.revertedWith('SV02');
       }
     } else {
-      expect(
+      await expect(
         batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[])'](
           streaming.address,
           recipients,
@@ -466,7 +466,7 @@ const batchErrorTests = (vesting, locked, bound) => {
     let unlocks = [0, 0];
     if (vesting) {
       if (locked) {
-        expect(
+        await expect(
           batcher[
             'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool)'
           ](
@@ -483,7 +483,7 @@ const batchErrorTests = (vesting, locked, bound) => {
           )
         ).to.be.revertedWith('SV03');
       } else {
-        expect(
+        await expect(
           batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address)'](
             streaming.address,
             recipients,
@@ -497,7 +497,7 @@ const batchErrorTests = (vesting, locked, bound) => {
         ).to.be.revertedWith('SV03');
       }
     } else {
-      expect(
+      await expect(
         batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[])'](
           streaming.address,
           recipients,
@@ -520,7 +520,7 @@ const batchErrorTests = (vesting, locked, bound) => {
     let unlocks = [0, 0];
     if (vesting) {
       if (locked) {
-        expect(
+        await expect(
           batcher[
             'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool)'
           ](
@@ -537,7 +537,7 @@ const batchErrorTests = (vesting, locked, bound) => {
           )
         ).to.be.revertedWith('SV05');
       } else {
-        expect(
+        await expect(
           batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address)'](
             streaming.address,
             recipients,
@@ -551,7 +551,7 @@ const batchErrorTests = (vesting, locked, bound) => {
         ).to.be.revertedWith('SV05');
       }
     } else {
-      expect(
+      await expect(
         batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[])'](
           streaming.address,
           recipients,
