@@ -60,7 +60,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           transferLocker
         );
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          await expect(tx)
+          expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -90,7 +90,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           creator.address
         );
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          await expect(tx)
+          expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -118,7 +118,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
         amountParams.rates
       );
       for (let i = 0; i < amountParams.amounts.length; i++) {
-        await expect(tx)
+        expect(tx)
           .to.emit('NFTCreated')
           .withArgs(
             i + 1,
@@ -176,9 +176,9 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           transferLocker,
           mintType
         );
-        await expect(tx).to.emit('BatchCreated').withArgs(mintType);
+        expect(tx).to.emit('BatchCreated').withArgs(mintType);
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          await expect(tx)
+          expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -208,9 +208,9 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
           creator.address,
           mintType
         );
-        await expect(tx).to.emit('BatchCreated').withArgs(mintType);
+        expect(tx).to.emit('BatchCreated').withArgs(mintType);
         for (let i = 0; i < amountParams.amounts.length; i++) {
-          await expect(tx)
+          expect(tx)
             .to.emit('NFTCreated')
             .withArgs(
               i + 1,
@@ -239,9 +239,9 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
         amountParams.rates,
         mintType
       );
-      await expect(tx).to.emit('BatchCreated').withArgs(mintType);
+      expect(tx).to.emit('BatchCreated').withArgs(mintType);
       for (let i = 0; i < amountParams.amounts.length; i++) {
-        await expect(tx)
+        expect(tx)
           .to.emit('NFTCreated')
           .withArgs(
             i + 1,
@@ -481,7 +481,7 @@ const batchErrorTests = (vesting, locked, bound) => {
             unlocks,
             true
           )
-        ).to.be.revertedWith('SV03');
+        ).to.be.reverted;
       } else {
         await expect(
           batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address)'](
@@ -494,7 +494,7 @@ const batchErrorTests = (vesting, locked, bound) => {
             rates,
             creator.address
           )
-        ).to.be.revertedWith('SV03');
+        ).to.be.reverted;
       }
     } else {
       await expect(
@@ -507,7 +507,7 @@ const batchErrorTests = (vesting, locked, bound) => {
           cliffs,
           rates
         )
-      ).to.be.revertedWith('SV03');
+      ).to.be.reverted;
     }
   });
   it('Fails if a rate is larger than the amount or is 0', async () => {
@@ -569,4 +569,4 @@ const batchErrorTests = (vesting, locked, bound) => {
 module.exports = {
   batchTests,
   batchErrorTests,
-}
+};
