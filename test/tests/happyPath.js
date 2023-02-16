@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { setupStreaming, setupBoundStreaming, setupVesting } = require('../fixtures');
+const { setupStreaming, setupVesting } = require('../fixtures');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const C = require('../constants');
 const { BigNumber } = require('ethers');
@@ -14,13 +14,7 @@ module.exports = (vesting, locks, bound, amountParams, timeParams) => {
   it(`Mints an ${vesting ? 'vesting' : 'streaming'} NFT to wallet A with ${ethers.utils.formatEther(
     amountParams.amount
   )} at a rate of ${ethers.utils.formatEther(amountParams.rate)}`, async () => {
-    if (vesting == true) {
-      s = await setupVesting();
-    } else if (bound == true) {
-      s = await setupBoundStreaming();
-    } else {
-      s = await setupStreaming();
-    }
+    s = vesting ? await setupVesting() : await setupStreaming(bound);
     streaming = s.streaming;
     creator = s.creator;
     a = s.a;

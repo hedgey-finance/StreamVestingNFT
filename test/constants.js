@@ -11,6 +11,30 @@ const randomBigNum = (base, max, min) => {
   return BigNumber.from(10).pow(base).mul(num);
 };
 
+const calculateBalances = (start, cliff, amount, rate, time) => {
+  let remainder =BigNumber.from(0);
+  let balance = BigNumber.from(0);
+  if (start >= time || cliff >= time) {
+    remainder = amount;
+    balance = 0;
+  } else {
+    let streamed = BigNumber.from(time).sub(start).mul(rate);
+    balance = bigMin(streamed, amount);
+    remainder = amount.sub(balance);
+  }
+  return {
+    balance,
+    remainder,
+  };
+};
+
+const calculateEnd = (amount, rate, start) => {
+  let end = BigNumber.from(0);
+  end = amount.div(rate).add(start);
+  end = amount.mod(rate) == 0 ? end : end.add(1);
+  return end;
+}
+
 module.exports = {
   ZERO: BigNumber.from(0),
   ONE: BigNumber.from(1),
@@ -34,4 +58,6 @@ module.exports = {
   ZERO_ADDRESS: '0x0000000000000000000000000000000000000000',
   bigMin,
   randomBigNum,
+  calculateBalances,
+  calculateEnd
 };

@@ -1,8 +1,8 @@
 const { expect } = require('chai');
-const { setupStreaming, setupVesting, setupBoundStreaming } = require('../fixtures');
+const { setupStreaming, setupVesting } = require('../fixtures');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const C = require('../constants');
-const { BigNumber } = require('ethers');
+const { ethers } = require('hardhat');
 
 /**  create tests need to: 
 1. Test basic create with various amounts rates, start dates, cliffs, unlocks dates
@@ -18,22 +18,7 @@ const { BigNumber } = require('ethers');
   - check it reverts if the token address is 0
   - check it reverts if the rate is 0 and rate is greater than the amount
 */
-const calculatedBalance = (start, cliff, amount, rate, time) => {
-  let remainder = C.ZERO;
-  let balance = C.ZERO;
-  if (start >= time || cliff >= time) {
-    remainder = amount;
-    balance = 0;
-  } else {
-    let streamed = BigNumber.from(time).sub(start).mul(rate);
-    balance = C.bigMin(streamed, amount);
-    remainder = amount.sub(balance);
-  }
-  return {
-    balance,
-    remainder,
-  };
-};
+
 
 const createTests = (vesting, locked, bound, amountParams, timeParams) => {
   let s, streaming, creator, a, b, c, token;
@@ -41,13 +26,7 @@ const createTests = (vesting, locked, bound, amountParams, timeParams) => {
   it(`Creator Mints a ${vesting ? 'vesting' : 'streaming'} NFT to wallet A with ${ethers.utils.formatEther(
     amountParams.amount
   )} at a rate of ${ethers.utils.formatEther(amountParams.rate)}`, async () => {
-    if (vesting == true) {
-      s = await setupVesting();
-    } else if (bound == true) {
-      s = await setupBoundStreaming();
-    } else {
-      s = await setupStreaming();
-    }
+    s = vesting ? await setupVesting() : await setupStreaming(bound);
     now = await time.latest();
     streaming = s.streaming;
     creator = s.creator;
@@ -64,8 +43,7 @@ const createTests = (vesting, locked, bound, amountParams, timeParams) => {
     timeShift = timeParams.timeShift;
     admin = creator.address;
     unlock = timeParams.unlockShift + now;
-    let end = amount.div(rate).add(start);
-    end = amount.mod(rate) == 0 ? end : end.add(1);
+    let end = C.calculateEnd(amount, rate, start);
     if (vesting) {
       if (locked) {
         const tx = await streaming.createLockedNFT(
@@ -101,14 +79,14 @@ const createTests = (vesting, locked, bound, amountParams, timeParams) => {
 
         let currentTime = await time.latest();
         // checks for streaming balances
-        let calcBalances = calculatedBalance(start, cliff, amount, rate, currentTime);
+        let calcBalances = C.calculateBalances(start, cliff, amount, rate, currentTime);
         let streamBalanceOf = await streaming.streamBalanceOf('1');
         expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
         expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
 
         // move forward in time and check
         let newTime = await time.increase(timeShift);
-        calcBalances = calculatedBalance(start, cliff, amount, rate, newTime);
+        calcBalances = C.calculateBalances(start, cliff, amount, rate, newTime);
         streamBalanceOf = await streaming.streamBalanceOf('1');
         expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
         expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
@@ -136,13 +114,13 @@ const createTests = (vesting, locked, bound, amountParams, timeParams) => {
 
         let currentTime = await time.latest();
         // checks for streaming balances
-        let calcBalances = calculatedBalance(start, cliff, amount, rate, currentTime);
+        let calcBalances = C.calculateBalances(start, cliff, amount, rate, currentTime);
         let streamBalanceOf = await streaming.streamBalanceOf('1');
         expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
         expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
 
         let newTime = await time.increase(timeShift);
-        calcBalances = calculatedBalance(start, cliff, amount, rate, newTime);
+        calcBalances = C.calculateBalances(start, cliff, amount, rate, newTime);
         streamBalanceOf = await streaming.streamBalanceOf('1');
         expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
         expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
@@ -166,13 +144,13 @@ const createTests = (vesting, locked, bound, amountParams, timeParams) => {
 
       let currentTime = await time.latest();
       // checks for streaming balances
-      let calcBalances = calculatedBalance(start, cliff, amount, rate, currentTime);
+      let calcBalances = C.calculateBalances(start, cliff, amount, rate, currentTime);
       let streamBalanceOf = await streaming.streamBalanceOf('1');
       expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
       expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
 
       let newTime = await time.increase(timeShift);
-      calcBalances = calculatedBalance(start, cliff, amount, rate, newTime);
+      calcBalances = C.calculateBalances(start, cliff, amount, rate, newTime);
       streamBalanceOf = await streaming.streamBalanceOf('1');
       expect(calcBalances.balance).to.eq(streamBalanceOf.balance);
       expect(calcBalances.remainder).to.eq(streamBalanceOf.remainder);
@@ -184,13 +162,7 @@ const createErrorTests = (vesting, locked, bound) => {
   let s, streaming, creator, a, b, c, token;
   let amount, start, cliff, rate, admin, unlock;
   it(`reverts if the allowance is 0 of the minter`, async () => {
-    if (vesting == true) {
-      s = await setupVesting();
-    } else if (bound == true) {
-      s = await setupBoundStreaming();
-    } else {
-      s = await setupStreaming();
-    }
+    s = vesting ? await setupVesting() : await setupStreaming(bound);
     now = await time.latest();
     streaming = s.streaming;
     creator = s.creator;

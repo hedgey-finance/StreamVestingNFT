@@ -11,13 +11,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
   it(`Batch mints ${amountParams.amounts.length} on the ${
     vesting ? 'vesting' : 'streaming'
   } batch minter contract without mint type`, async () => {
-    if (vesting == true) {
-      s = await setupVesting();
-    } else if (bound == true) {
-      s = await setupBoundStreaming();
-    } else {
-      s = await setupStreaming();
-    }
+    s = vesting ? await setupVesting() : await setupStreaming(bound);
     streaming = s.streaming;
     batcher = s.batchStreamer;
     creator = s.creator;
@@ -263,13 +257,7 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
 const batchErrorTests = (vesting, locked, bound) => {
   let s, streaming, creator, a, b, token, batcher;
   it('Fails if the recipients, amounts, starts, cliffs, and rates and unlocks array are not the same length', async () => {
-    if (vesting == true) {
-      s = await setupVesting();
-    } else if (bound == true) {
-      s = await setupBoundStreaming();
-    } else {
-      s = await setupStreaming();
-    }
+    s = vesting ? await setupVesting() : await setupStreaming(bound);
     streaming = s.streaming;
     batcher = s.batchStreamer;
     creator = s.creator;
