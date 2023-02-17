@@ -4,28 +4,15 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 
 async function setupVesting() {
   const [creator, a, b, c] = await ethers.getSigners();
-  const streamLib = await ethers.deployContract('StreamLibrary');
 
-  const TransferLocker = await ethers.getContractFactory('StreamingHedgeys', {
-    libraries: {
-      StreamLibrary: streamLib.address,
-    },
-  });
+  const TransferLocker = await ethers.getContractFactory('StreamingHedgeys');
 
-  const NoTransferLocker = await ethers.getContractFactory('StreamingBoundHedgeys', {
-    libraries: {
-      StreamLibrary: streamLib.address,
-    },
-  });
+  const NoTransferLocker = await ethers.getContractFactory('StreamingBoundHedgeys');
 
   const transferLocker = await TransferLocker.deploy('StreamingHedgeys', 'STHD');
   const notransferLocker = await NoTransferLocker.deploy('BoundHedgeys', 'BHDG');
 
-  const Streaming = await ethers.getContractFactory('StreamVestingNFT', {
-    libraries: {
-      StreamLibrary: streamLib.address,
-    },
-  });
+  const Streaming = await ethers.getContractFactory('StreamVestingNFT');
   const streaming = await Streaming.deploy('Streamers', 'STMY', transferLocker.address, notransferLocker.address);
 
   const BatchStreamer = await ethers.getContractFactory('BatchVester');
@@ -57,16 +44,8 @@ async function setupStreaming(bound) {
   const [creator, a, b, c] = await ethers.getSigners();
   const streamLib = await ethers.deployContract('StreamLibrary');
   const Streaming = bound
-    ? await ethers.getContractFactory('StreamingHedgeys', {
-        libraries: {
-          StreamLibrary: streamLib.address,
-        },
-      })
-    : await ethers.getContractFactory('StreamingBoundHedgeys', {
-        libraries: {
-          StreamLibrary: streamLib.address,
-        },
-      });
+    ? await ethers.getContractFactory('StreamingHedgeys')
+    : await ethers.getContractFactory('StreamingBoundHedgeys');
   const streaming = await Streaming.deploy('StreamingHedgeys', 'STHD');
 
   const BatchStreamer = await ethers.getContractFactory('BatchStreamer');
