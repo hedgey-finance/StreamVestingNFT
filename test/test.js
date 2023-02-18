@@ -131,14 +131,16 @@ describe(`Testing the Redemption of NFTs`, () => {
   ];
   amountParamsMatrix.forEach((amountParam) => {
     timeParamsMatrix.forEach((timeParam) => {
-      // redeemTest(true, false, amountParam, timeParam);
-      // redeemTest(false, false, amountParam, timeParam);
-      // redeemTest(false, true, amountParam, timeParam);
-      // reedeemMulitpleTest(true, false, amountParam, timeParam);
-      // redeemAllTest(true, false, amountParam, timeParam);
-      // redeemAllTest(false, true, amountParam, timeParam);
-      // redeemAllTest(false, false, amountParam, timeParam);
-      //transferAndRedeemTest(amountParam, timeParam);
+      redeemTest(true, false, amountParam, timeParam);
+      redeemTest(false, false, amountParam, timeParam);
+      redeemTest(false, true, amountParam, timeParam);
+      reedeemMulitpleTest(true, false, amountParam, timeParam);
+      reedeemMulitpleTest(false, true, amountParam, timeParam);
+      reedeemMulitpleTest(false, false, amountParam, timeParam);
+      redeemAllTest(true, false, amountParam, timeParam);
+      redeemAllTest(false, true, amountParam, timeParam);
+      redeemAllTest(false, false, amountParam, timeParam);
+      transferAndRedeemTest(amountParam, timeParam);
     });
   });
   redeemErrorTests(true, false);

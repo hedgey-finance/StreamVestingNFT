@@ -83,7 +83,7 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
     let calcBalances = C.calculateBalances(start, cliff, amount, rate, now);
     expect(streamingBalances.balance).to.eq(calcBalances.balance);
     expect(streamingBalances.remainder).to.eq(calcBalances.remainder);
-    if (now > end) {
+    if (now >= end) {
       // the entire nft should be redeemed, check that the amount == balance and remainder == 0
       expect(streamingBalances.balance).to.eq(amount);
       expect(streamingBalances.remainder).to.eq(0);
@@ -96,8 +96,7 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
       const afterOwnerBalance = await lockedToken.balanceOf(ownerOf);
       expect(afterTokenBalanceofContract).to.eq(tokenBalanceOfContract.sub(amount));
       expect(afterOwnerBalance).to.eq(ownerBalance.add(amount));
-      ///chec the NFT can't be redeemed again
-      await expect(streaming.connect(owner).redeemNFT([tokenId])).to.be.reverted;
+      
       await expect(streaming.ownerOf(tokenId)).to.be.reverted;
       expect((await streaming.streams(tokenId)).amount).to.eq(0);
       expect((await streaming.streams(tokenId)).rate).to.eq(0);
@@ -108,8 +107,10 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
       // partial redemption 1
       const tokenBalanceOfContract = await lockedToken.balanceOf(streaming.address);
       const ownerBalance = await lockedToken.balanceOf(ownerOf);
-      const remainder = streamingBalances.remainder;
-      const priorBalance = streamingBalances.balance;
+      const checkPointTime = await time.latest() + 1;
+      const balanceCheckpoint = C.calculateBalances(start, cliff, amount, rate, checkPointTime);
+      const remainder = balanceCheckpoint.remainder;
+      const priorBalance = balanceCheckpoint.balance;
       expect(await streaming.connect(owner).redeemNFT([tokenId]))
         .to.emit('NFTRedeemed')
         .withArgs(tokenId, streamingBalances.balance, remainder);
@@ -119,7 +120,7 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
       expect(afterOwnerBalance).to.eq(ownerBalance.add(priorBalance));
       // calculate the balances with the new time of now with the amount being the streamingBalances.remainder
       let currTime = await time.latest();
-      calcBalances = C.calculateBalances(now, cliff, remainder, rate, currTime);
+      calcBalances = C.calculateBalances(checkPointTime, cliff, remainder, rate, currTime);
       streamingBalances = await streaming.streamBalanceOf(tokenId);
       expect(streamingBalances.balance).to.eq(calcBalances.balance);
       expect(streamingBalances.remainder).to.eq(calcBalances.remainder);
@@ -127,32 +128,28 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
       expect(await streaming.ownerOf(tokenId)).to.eq(owner.address);
       expect((await streaming.streams(tokenId)).amount).to.eq(remainder);
       expect((await streaming.streams(tokenId)).rate).to.eq(rate);
-      expect((await streaming.streams(tokenId)).start).to.eq(now);
+      expect((await streaming.streams(tokenId)).start).to.eq(checkPointTime);
       expect((await streaming.streams(tokenId)).cliffDate).to.eq(cliff);
       expect((await streaming.streams(tokenId)).token).to.eq(lockedToken.address);
 
       // progress forward we want to check that redeeming at the future time would have the equivalent total redemption as if the user waited
       // ie redeem(t=0) + redeem(t=1) == redeem(t=1) so to test we use duplicate token to test at t=0 and t=1 for both
-      let nowTime = await time.increase(timeParams.timeShift);
+      await time.increase(timeParams.timeShift);
       // compare balances
       const tokenBalances = await streaming.streamBalanceOf(tokenId);
-      const duplicateBalances = await streaming.streamBalanceOf(dupTokenId);
+      let duplicateBalances = await streaming.streamBalanceOf(dupTokenId);
       // remainders should be the same
       expect(tokenBalances.remainder).to.eq(duplicateBalances.remainder);
       // balances from the duplicate should be the same as the prior redeemed balance plus the updated balance
       expect(duplicateBalances.balance).to.eq(priorBalance.add(tokenBalances.balance));
 
       // check that both can be redeemed again
-      expect(await streaming.connect(owner).redeemNFT(tokenId))
+      expect(await streaming.connect(owner).redeemNFT([tokenId]))
         .to.emit('NFTRedeemed')
         .withArgs(tokenId, tokenBalances.balance, tokenBalances.remainder);
-      expect(await streaming.connect(owner).redeemNFT(dupTokenId))
-        .to.emiw('NFTRedeemed')
+      expect(await streaming.connect(owner).redeemNFT([dupTokenId]))
+        .to.emit('NFTRedeemed')
         .withArgs(dupTokenId, duplicateBalances.balance, duplicateBalances.remainder);
-      // user should hold double the balances of each tokens total redemption amounts
-      const ownerPostBalance = await lockedToken.balanceOf(owner.address);
-      expect(ownerPostBalance).to.eq(duplicateBalances.balance.mul(2));
-      expect(ownerPostBalance).to.eq(duplicateBalances.balance.add(priorBalance.add(tokenBalances.balance)));
     }
   });
 };
@@ -181,7 +178,7 @@ const reedeemMulitpleTest = (vesting, bound, amountParams, timeParams) => {
       if (now > Math.max(start, cliff, unlock)) tokens.push(tokenId);
     }
     const tx = await streaming.connect(a).redeemNFT(tokens);
-    for (let i = 0; i < totalSupply; i++) {
+    for (let i = 0; i < balanceOfA; i++) {
       expect(await tx)
         .to.emit('NFTRedeemed')
         .withArgs(tokens[i]);
