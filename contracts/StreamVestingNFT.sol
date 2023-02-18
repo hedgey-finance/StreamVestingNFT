@@ -9,8 +9,6 @@ import './libraries/TransferHelper.sol';
 import './libraries/StreamLibrary.sol';
 import './interfaces/IStreamNFT.sol';
 
-import 'hardhat/console.sol';
-
 /**
  * @title An NFT representation of ownership of time vesting tokens that vest continuously per second
  * @notice The time vesting tokens are redeemable by the owner of the NFT
@@ -76,7 +74,12 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @notice the constructur function has two params:
   /// @param name is the name of the collection of NFTs
   /// @param symbol is the symbol for the NFT collection, typically an abbreviated version of the name
-  constructor(string memory name, string memory symbol, address transferNFTLocker, address nontransferNFTLocker) ERC721(name, symbol) {
+  constructor(
+    string memory name,
+    string memory symbol,
+    address transferNFTLocker,
+    address nontransferNFTLocker
+  ) ERC721(name, symbol) {
     require(transferNFTLocker != address(0) && nontransferNFTLocker != address(0));
     admin = msg.sender;
     nftLockers[true] = transferNFTLocker;
@@ -123,7 +126,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     _createNFT(holder, token, amount, start, cliffDate, rate, vestingAdmin, 0, false);
   }
 
-  /// @notice createLockedNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens, 
+  /// @notice createLockedNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens,
   /// with the caveat that vested tokens are subjext to a lockup period, such that even once tokens are vested they can only be redeemed after the unlock date has passed
   /// @param holder is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
   /// @param token is the token address of the tokens that will be vesting inside the stream
@@ -168,16 +171,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
-    streams[newItemId] = Stream(
-      token,
-      amount,
-      start,
-      cliffDate,
-      rate,
-      vestingAdmin,
-      unlockDate,
-      transferableNFTLocker
-    );
+    streams[newItemId] = Stream(token, amount, start, cliffDate, rate, vestingAdmin, unlockDate, transferableNFTLocker);
     _safeMint(holder, newItemId);
     emit NFTCreated(
       newItemId,
@@ -223,7 +217,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @dev pulls the balance and uses the enumerate function to redeem each NFT based on their index id
   /// this function will not revert if there is no balance, it will simply redeem all NFTs owned by the msg.sender that have a balance
   function redeemAllNFTs() external nonReentrant {
-    uint bal = balanceOf(msg.sender);
+    uint256 bal = balanceOf(msg.sender);
     uint256[] memory tokenIds = new uint256[](bal);
     for (uint256 i; i < bal; i++) {
       //check the balance of the vest first
@@ -232,8 +226,6 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     }
     _redeemNFTs(tokenIds);
   }
-
-  
 
   /// @dev function for the vestingAdmin to revoke tokens if someone is no longer supposed to recieve their vesting stream
   /// @param tokenIds are the tokens that are going to be revoked
@@ -301,11 +293,14 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     delete streams[tokenId];
     _burn(tokenId);
     TransferHelper.withdrawTokens(stream.token, vestingAdmin, remainder);
-    if (stream.unlockDate > block.timestamp) {
-      mintLockedNFT(holder, stream.token, balance, stream.unlockDate, stream.transferableNFTLocker);
-    } else {
-      TransferHelper.withdrawTokens(stream.token, holder, balance);
+    if (balance > 0) {
+      if (stream.unlockDate > block.timestamp) {
+        mintLockedNFT(holder, stream.token, balance, stream.unlockDate, stream.transferableNFTLocker);
+      } else {
+        TransferHelper.withdrawTokens(stream.token, holder, balance);
+      }
     }
+
     emit NFTRevoked(tokenId, balance, remainder);
   }
 

@@ -10,10 +10,10 @@ async function setupVesting() {
   const NoTransferLocker = await ethers.getContractFactory('StreamingBoundHedgeys');
 
   const transferLocker = await TransferLocker.deploy('StreamingHedgeys', 'STHD');
-  const notransferLocker = await NoTransferLocker.deploy('BoundHedgeys', 'BHDG');
+  const noTransferLocker = await NoTransferLocker.deploy('BoundHedgeys', 'BHDG');
 
   const Streaming = await ethers.getContractFactory('StreamVestingNFT');
-  const streaming = await Streaming.deploy('Streamers', 'STMY', transferLocker.address, notransferLocker.address);
+  const streaming = await Streaming.deploy('Streamers', 'STMY', transferLocker.address, noTransferLocker.address);
 
   const BatchStreamer = await ethers.getContractFactory('BatchVester');
   const batchStreamer = await BatchStreamer.deploy();
@@ -36,7 +36,7 @@ async function setupVesting() {
     streaming,
     batchStreamer,
     transferLocker,
-    notransferLocker,
+    noTransferLocker,
   };
 }
 
@@ -79,6 +79,8 @@ async function peMintedVesting(amountParams, timeParams) {
   const creator = s.creator;
   const token = s.token;
   const usdc = s.usdc;
+  const tranferLocker = s.transferLocker;
+  const noTransferLocker = s.noTransferLocker;
   let now = await time.latest();
   for (let i = 0; i < amountParams.amounts.length; i++) {
     let amount = amountParams.amounts[i];
