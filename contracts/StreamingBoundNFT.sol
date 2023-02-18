@@ -118,7 +118,7 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
   /// @dev function to delegate specific tokens to another wallt for voting
   /// @param delegate is the address of the wallet to delegate the NFTs to
   /// @param tokenIds is the array of tokens that we want to delegate
-  function delegateToken(address delegate, uint[] memory tokenIds) external {
+  function delegateToken(address delegate, uint256[] memory tokenIds) external {
     for (uint256 i; i < tokenIds.length; i++) {
       _delegateToken(delegate, tokenIds[i]);
     }
@@ -133,27 +133,33 @@ contract StreamingBoundHedgeys is ERC721Delegate, ReentrancyGuard {
       _delegateToken(delegate, tokenId);
     }
   }
-  
+
   /// @notice function to redeem a single or multiple NFT streams
   /// @param tokenIds is an array of tokens that are passed in to be redeemed
-  /// @dev this will revert if any of the tokens passed in do not exist or do not have a balance
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
-    for (uint256 i; i < tokenIds.length; i++) {
-      _redeemNFT(msg.sender, tokenIds[i]);
-    }
+    _redeemNFTs(tokenIds);
   }
 
   /// @notice function to claim for all of my owned NFTs
   /// @dev pulls the balance and uses the enumerate function to redeem each NFT based on their index id
   /// this function will not revert if there is no balance, it will simply redeem all NFTs owned by the msg.sender that have a balance
   function redeemAllNFTs() external nonReentrant {
-    for (uint256 i; i < balanceOf(msg.sender); i++) {
+    uint bal = balanceOf(msg.sender);
+    uint256[] memory tokenIds = new uint256[](bal);
+    for (uint256 i; i < bal; i++) {
       //check the balance of the vest first
       uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
-      (uint256 balance, ) = streamBalanceOf(tokenId);
-      if (balance > 0) {
-        _redeemNFT(msg.sender, tokenId);
-      }
+      tokenIds[i] = tokenId;
+    }
+    _redeemNFTs(tokenIds);
+  }
+
+  /// @dev function to redeem the multiple NFTs
+  /// @dev internal method used for the redeemNFT and redeemAllNFTs to process multiple and avoid reentrancy
+  function _redeemNFTs(uint256[] memory tokenIds) internal {
+    for (uint256 i; i < tokenIds.length; i++) {
+      (uint256 balance, ) = streamBalanceOf(tokenIds[i]);
+      if (balance > 0) _redeemNFT(msg.sender, tokenIds[i]);
     }
   }
 

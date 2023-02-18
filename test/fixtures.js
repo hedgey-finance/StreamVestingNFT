@@ -42,10 +42,9 @@ async function setupVesting() {
 
 async function setupStreaming(bound) {
   const [creator, a, b, c] = await ethers.getSigners();
-  const streamLib = await ethers.deployContract('StreamLibrary');
   const Streaming = bound
-    ? await ethers.getContractFactory('StreamingHedgeys')
-    : await ethers.getContractFactory('StreamingBoundHedgeys');
+    ? await ethers.getContractFactory('StreamingBoundHedgeys')
+    : await ethers.getContractFactory('StreamingHedgeys');
   const streaming = await Streaming.deploy('StreamingHedgeys', 'STHD');
 
   const BatchStreamer = await ethers.getContractFactory('BatchStreamer');
@@ -88,7 +87,8 @@ async function peMintedVesting(amountParams, timeParams) {
     let cliff = timeParams.cliffs[i] + now;
     let unlock = timeParams.unlocks[i] + now;
     let admin = s.creator.address;
-    let tokenAddress = i % 2 == 0 ? token.address : usdc.address;
+    let tokenAddress = token.address;
+    // let tokenAddress = i % 2 == 0 ? token.address : usdc.address;
     await streaming.createLockedNFT(a.address, tokenAddress, amount, start, cliff, rate, admin, unlock, true);
   }
   return {

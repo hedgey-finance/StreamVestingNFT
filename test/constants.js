@@ -1,4 +1,5 @@
 const BigNumber = require('ethers').BigNumber;
+const { ethers } = require('hardhat');
 
 const bigMin = (a, b) => {
   if (a.lte(b)) return a;
@@ -35,6 +36,10 @@ const calculateEnd = (amount, rate, start) => {
   return end;
 }
 
+const getVal = (amount) => {
+  return ethers.utils.formatEther(amount);
+}
+
 module.exports = {
   ZERO: BigNumber.from(0),
   ONE: BigNumber.from(1),
@@ -59,5 +64,6 @@ module.exports = {
   bigMin,
   randomBigNum,
   calculateBalances,
-  calculateEnd
+  calculateEnd,
+  getVal,
 };

@@ -9,6 +9,8 @@ import './libraries/TransferHelper.sol';
 import './libraries/StreamLibrary.sol';
 import './interfaces/IStreamNFT.sol';
 
+import 'hardhat/console.sol';
+
 /**
  * @title An NFT representation of ownership of time vesting tokens that vest continuously per second
  * @notice The time vesting tokens are redeemable by the owner of the NFT
@@ -213,31 +215,42 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @notice function to redeem a single or multiple NFT streams
   /// @param tokenIds is an array of tokens that are passed in to be redeemed
-  /// @dev this will revert if any of the tokens passed in do not exist or do not have a balance
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
-    for (uint256 i; i < tokenIds.length; i++) {
-      _redeemNFT(msg.sender, tokenIds[i]);
-    }
+    _redeemNFTs(tokenIds);
   }
 
   /// @notice function to claim for all of my owned NFTs
   /// @dev pulls the balance and uses the enumerate function to redeem each NFT based on their index id
   /// this function will not revert if there is no balance, it will simply redeem all NFTs owned by the msg.sender that have a balance
   function redeemAllNFTs() external nonReentrant {
-    for (uint256 i; i < balanceOf(msg.sender); i++) {
+    uint bal = balanceOf(msg.sender);
+    uint256[] memory tokenIds = new uint256[](bal);
+    for (uint256 i; i < bal; i++) {
+      //check the balance of the vest first
       uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
-      (uint256 balance, ) = streamBalanceOf(tokenId);
-      if (balance > 0) {
-        _redeemNFT(msg.sender, tokenId);
-      }
+      tokenIds[i] = tokenId;
     }
+    _redeemNFTs(tokenIds);
   }
+
+  
 
   /// @dev function for the vestingAdmin to revoke tokens if someone is no longer supposed to recieve their vesting stream
   /// @param tokenIds are the tokens that are going to be revoked
   function revokeNFT(uint256[] memory tokenIds) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
       _revokeNFT(msg.sender, tokenIds[i]);
+    }
+  }
+
+  /// @dev function to redeem the multiple NFTs
+  /// @dev internal method used for the redeemNFT and redeemAllNFTs to process multiple and avoid reentrancy
+  function _redeemNFTs(uint256[] memory tokenIds) internal {
+    for (uint256 i; i < tokenIds.length; i++) {
+      (uint256 balance, ) = streamBalanceOf(tokenIds[i]);
+      if (balance > 0 && streams[tokenIds[i]].unlockDate <= block.timestamp) {
+        _redeemNFT(msg.sender, tokenIds[i]);
+      }
     }
   }
 

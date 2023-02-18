@@ -2,7 +2,9 @@ const adminTest = require('./tests/adminTest');
 const happyPath = require('./tests/happyPath');
 const { createTests, createErrorTests } = require('./tests/createTest');
 const { batchTests, batchErrorTests } = require('./tests/batchingTest');
-const { redeemTest } = require('./tests/redeeming');
+const { redeemTest, reedeemMulitpleTest, redeemAllTest, transferAndRedeemTest, redeemErrorTests } = require('./tests/redeeming');
+
+const { delegateTests } = require('./tests/delegateTests');
 
 const C = require('./constants');
 
@@ -110,25 +112,40 @@ const C = require('./constants');
 
 describe(`Testing the Redemption of NFTs`, () => {
   const amountParamsMatrix = [
-    { amounts: [C.E18_1, C.E18_10, C.E18_1], rates: [C.E18_05, C.E18_1, C.E18_1] },
-    //     { amounts: [C.E18_10, C.E18_12, C.E18_13], rates: [C.E18_05, C.E18_10, C.E18_1] },
-    //     { amounts: [C.E18_100, C.E18_10, C.E18_1], rates: [C.E18_100, C.E18_1, C.E18_1] },
-    //     { amounts: [C.randomBigNum(18, 100, 2), C.randomBigNum(18, 100, 4), C.randomBigNum(18, 100, 5)], rates: [C.E18_05, C.E18_1, C.E18_1] },
-    //     { amounts: [C.randomBigNum(18, 100, 1), C.randomBigNum(18, 100, 12), C.randomBigNum(18, 100, 17)], rates: [C.E18_05, C.E18_1, C.E18_1] },
-    //     { amounts: [C.randomBigNum(6, 100, 10), C.randomBigNum(6, 100, 12), C.randomBigNum(7, 100, 11)], rates: [C.E6_10, C.E6_10, C.E6_10] },
+    { amounts: [C.E18_1, C.E18_10, C.E18_1, C.E18_1], rates: [C.E18_05, C.E18_1, C.E18_1, C.E18_05] },
+    { amounts: [C.E18_1000, C.E18_1000, C.E18_1000, C.E18_1000], rates: [C.E18_05, C.E18_1, C.E18_10, C.E18_13] },
+    { amounts: [C.E18_10, C.E18_12, C.E18_13, C.E18_1000], rates: [C.E18_05, C.E18_10, C.E18_1, C.E18_3] },
+    {
+      amounts: [C.randomBigNum(18, 100, 2), C.randomBigNum(18, 100, 4), C.randomBigNum(18, 500, 5), C.randomBigNum(18, 1000, 3)],
+      rates: [C.E18_05, C.E18_1, C.E18_1, C.E18_3],
+    },
+    {
+      amounts: [C.randomBigNum(6, 100, 10), C.randomBigNum(6, 100, 12), C.randomBigNum(7, 100, 11), C.randomBigNum(1, 1000, 10)],
+      rates: [C.E6_10, C.E6_10, C.E6_10, C.ONE],
+    },
   ];
   const timeParamsMatrix = [
-    { starts: [0, 100, 5000], cliffs: [0, 500, 6000], unlocks: [0, 0, 7000], timeShift: 1 },
-    //     { starts: [-50, -100, -200], cliffs: [-50, -50, -50], unlocks: [-25, 0, -50] },
-    //     { starts: [50, 100, 200], cliffs: [75, 150, 500], unlocks: [100, 200, 1000] },
+    { starts: [0, 0, 0, 0], cliffs: [0, 0, 0, 0], unlocks: [0, 0, 0, 0], timeShift: 10 },
+    { starts: [0, 100, 500, 1000], cliffs: [0, 500, 1000, 5000], unlocks: [0, 0, 700, 7000], timeShift: 10 },
+    { starts: [-50, -100, -200, -1000], cliffs: [-50, -50, -200, -500], unlocks: [-25, 0, -200, 0], timeShift: 10 },
   ];
-  amountParamsMatrix.forEach(amountParam => {
-    timeParamsMatrix.forEach(timeParam => {
-        redeemTest(true, false, amountParam, timeParam);
-    })
-  })
+  amountParamsMatrix.forEach((amountParam) => {
+    timeParamsMatrix.forEach((timeParam) => {
+      // redeemTest(true, false, amountParam, timeParam);
+      // redeemTest(false, false, amountParam, timeParam);
+      // redeemTest(false, true, amountParam, timeParam);
+      // reedeemMulitpleTest(true, false, amountParam, timeParam);
+      // redeemAllTest(true, false, amountParam, timeParam);
+      // redeemAllTest(false, true, amountParam, timeParam);
+      // redeemAllTest(false, false, amountParam, timeParam);
+      //transferAndRedeemTest(amountParam, timeParam);
+    });
+  });
+  redeemErrorTests(true, false);
+  redeemErrorTests(false, true);
+  redeemErrorTests(false, false);
 });
 
 // describe('Testing the locked token balance, and delegation of locked balances', () => {
-//     voteTests.streamVotingTest();
-// })
+//     delegateTests();
+// });
