@@ -19,6 +19,10 @@ interface IVestingNFT {
   event NFTRedeemed(uint256 indexed id, uint256 balance, uint256 remainder);
   event URISet(string newURI);
 
+  function updateBaseURI(string memory _uri) external;
+
+  function deleteAdmin() external;
+
   function createNFT(
     address holder,
     address token,
@@ -26,7 +30,7 @@ interface IVestingNFT {
     uint256 start,
     uint256 cliffDate,
     uint256 rate,
-    address manager
+    address vestingAdmin
   ) external;
 
   function createLockedNFT(
@@ -36,7 +40,7 @@ interface IVestingNFT {
     uint256 start,
     uint256 cliffDate,
     uint256 rate,
-    address manager,
+    address vestingAdmin,
     uint256 unlockDate,
     bool transferableNFTLockers
   ) external;
