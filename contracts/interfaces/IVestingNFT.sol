@@ -76,4 +76,8 @@ interface IVestingNFT {
   function delegatedTo(uint256 tokenId) external view returns (address);
 
   function tokenOfDelegateByIndex(address delegate, uint256 index) external view returns (uint256);
+
+  function lockedBalances(address holder, address token) external view returns (uint256);
+
+  function delegatedBalances(address delegate, address token) external view returns (uint256);
 }

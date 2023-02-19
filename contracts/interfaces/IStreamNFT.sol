@@ -49,11 +49,19 @@ interface IStreamNFT {
       uint256 rate
     );
 
-    function balanceOf(address holder) external view returns (uint256 balance);
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
-    function tokenByIndex(uint256 index) external view returns (uint256);
-    function balanceOfDelegate(address delegate) external view returns (uint256);
-    function delegatedTo(uint256 tokenId) external view returns (address);
-    function tokenOfDelegateByIndex(address delegate, uint256 index) external view returns (uint256);
-    
+  function balanceOf(address holder) external view returns (uint256 balance);
+
+  function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256);
+
+  function tokenByIndex(uint256 index) external view returns (uint256);
+
+  function balanceOfDelegate(address delegate) external view returns (uint256);
+
+  function delegatedTo(uint256 tokenId) external view returns (address);
+
+  function tokenOfDelegateByIndex(address delegate, uint256 index) external view returns (uint256);
+
+  function lockedBalances(address holder, address token) external view returns (uint256);
+
+  function delegatedBalances(address delegate, address token) external view returns (uint256);
 }
