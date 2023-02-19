@@ -111,3 +111,5 @@ cache/
 
 # Coverage file
 coverage.json
+
+scripts/keys.js
