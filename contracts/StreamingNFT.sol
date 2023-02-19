@@ -45,7 +45,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   ///@notice Events when a new stream and NFT is minted this event spits out all of the struct information
   event NFTCreated(
     uint256 indexed id,
-    address indexed holder,
+    address indexed recipient,
     address token,
     uint256 amount,
     uint256 start,
@@ -87,7 +87,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   }
 
   /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time locked stream of tokens
-  /// @param holder is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
+  /// @param recipient is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
   /// @param token is the token address of the tokens that will be locked inside the stream
   /// @param amount is the total amount of tokens to be locked for the duration of the streaming unlock period
   /// @param start is the start date for when the tokens start to become unlocked, this can be past dated, present or futured dated using unix timestamp
@@ -96,14 +96,14 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   /// @param rate is the rate tokens are continuously unlocked, in seconds.
 
   function createNFT(
-    address holder,
+    address recipient,
     address token,
     uint256 amount,
     uint256 start,
     uint256 cliffDate,
     uint256 rate
   ) external nonReentrant {
-    require(holder != address(0), 'SV02');
+    require(recipient != address(0), 'SV02');
     require(token != address(0), 'SV03');
     require(amount > 0, 'SV04');
     require(rate > 0 && rate <= amount, 'SV05');
@@ -112,8 +112,8 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     uint256 end = StreamLibrary.endDate(start, rate, amount);
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
     streams[newItemId] = Stream(token, amount, start, cliffDate, rate);
-    _safeMint(holder, newItemId);
-    emit NFTCreated(newItemId, holder, token, amount, start, cliffDate, end, rate);
+    _safeMint(recipient, newItemId);
+    emit NFTCreated(newItemId, recipient, token, amount, start, cliffDate, end, rate);
   }
 
   /// @dev function to delegate specific tokens to another wallt for voting

@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 interface IStreamNFT {
   event NFTCreated(
     uint256 indexed id,
-    address indexed holder,
+    address indexed recipient,
     address token,
     uint256 amount,
     uint256 start,
@@ -20,7 +20,7 @@ interface IStreamNFT {
   function deleteAdmin() external;
 
   function createNFT(
-    address holder,
+    address recipient,
     address token,
     uint256 amount,
     uint256 start,
@@ -33,6 +33,10 @@ interface IStreamNFT {
   function redeemNFT(uint256[] memory tokenIds) external;
 
   function redeemAllNFTs() external;
+
+  function delegateToken(address delegate, uint256[] memory tokenIds) external;
+
+  function delegateAllNFTs(address delegate) external;
 
   function streamBalanceOf(uint256 tokenId) external view returns (uint256 balance, uint256 remainder);
 
