@@ -36,6 +36,9 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @dev start is the start date when token stream begins, this can be set at anytime including past and future
   /// @dev cliffDate is an optional field to add a single cliff date prior to which the tokens cannot be unlocked
   /// @dev rate is the number of tokens per second being streamed
+  /// @dev vestingAdmin is the address of a vesting administor that can revoke NFTs and pull unvested tokens to its wallet any time. 
+  /// @dev unlockDate is the date set for an optional lockup period, that the vested tokens may be subject to
+  /// @dev in the case where there is an unlockDate, this is enforced via vested tokens being transferred to and minting an NFT of either the StreamingHedgeys or StreamingBoundHedgeys - determined by the true or false of this param
   struct Stream {
     address token;
     uint256 amount;

@@ -68,7 +68,7 @@ interface IVestingNFT {
       uint256 start,
       uint256 cliffDate,
       uint256 rate,
-      address manager,
+      address vestingAdmin,
       uint256 unlockDate,
       bool transferableNFTLockers
     );
