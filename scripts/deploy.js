@@ -6,8 +6,8 @@ const streamingNFT = require('../artifacts/contracts/StreamingNFT.sol/StreamingH
 const streamingBound = require('../artifacts/contracts/StreamingBoundNFT.sol/StreamingBoundHedgeys.json');
 const keys = require('./keys');
 
-async function deploy(artifact, args, privateKey) {
-    const rpc = keys.goerliURL;
+async function deploy(rpcUrl, artifact, privateKey, args) {
+    const rpc = rpcUrl;
     const provider = new ethers.providers.JsonRpcProvider(rpc);
     const wallet = new ethers.Wallet(privateKey, provider);
     const factory = new ethers.ContractFactory(artifact.abi, artifact.bytecode, wallet);
@@ -18,5 +18,5 @@ async function deploy(artifact, args, privateKey) {
     console.log(args);
 }
 
-// deploy the contract
+// deploys the contracts
 // use npx hardhat verify --network [network] [contract_address] [args] to verify on etherscan
