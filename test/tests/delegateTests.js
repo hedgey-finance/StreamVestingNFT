@@ -1,5 +1,5 @@
 const { expect } = require('chai');
-const { setupStreaming, setupVesting } = require('../fixtures');
+const { setupStreaming, setupVesting, subDelegateSetup } = require('../fixtures');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const C = require('../constants');
 const { BigNumber } = require('ethers');
@@ -305,6 +305,53 @@ const delegateTests = () => {
   });
 };
 
+const subDelegateTests = () => {
+  let streaming, sub, creator, a, b, c, token;
+  let amount, start, cliff, rate, end;
+  it(`sub delegates token balances of a single nft to two different addresses`, async () => {
+    const s = await subDelegateSetup();
+    streaming = s.streaming;
+    sub = s.subDelegation;
+    creator = s.creator;
+    a = s.a;
+    b = s.b;
+    c = s.c;
+    token = s.token;
+    amount = C.E18_100;
+    start = await time.latest();
+    cliff = start;
+    rate = C.E18_1;
+    // mint a token from creator to itself
+    await streaming.createNFT(creator.address, token.address, amount, start, cliff, rate);
+    let tokenId = '1';
+    // first we have to delegate to the sub address
+    await streaming.delegateToken(sub.address, [tokenId]); 
+    // now we can sub delegate this into three parts;
+    let aPercent = '50';
+    let bPercent = '30';
+    let cPercent = '20';
+    await sub.subDelegate(tokenId, a.address, aPercent);
+    // check the balances, should be half of the total amount delegated to a
+    let aSubDelegation = await sub.getSubDelegateBalance(a.address, token.address);
+    expect(aSubDelegation).to.eq(amount.div(2));
+    //add delegation to b
+    await sub.subDelegate(tokenId, b.address, bPercent);
+    let bSubDelegation = await sub.getSubDelegateBalance(b.address, token.address);
+    aSubDelegation = await sub.getSubDelegateBalance(a.address, token.address);
+    expect(aSubDelegation).to.eq(amount.div(2));
+    expect(bSubDelegation).to.eq(amount.mul(30).div(100));
+    // add c to the mix
+    await sub.subDelegate(tokenId, c.address ,cPercent);
+    cSubDelegation = await sub.getSubDelegateBalance(c.address, token.address);
+    bSubDelegation = await sub.getSubDelegateBalance(b.address, token.address);
+    aSubDelegation = await sub.getSubDelegateBalance(a.address, token.address);
+    expect(aSubDelegation).to.eq(amount.mul(50).div(100));
+    expect(bSubDelegation).to.eq(amount.mul(30).div(100));
+    expect(cSubDelegation).to.eq(amount.mul(20).div(100));
+  });
+}
+
 module.exports = {
     delegateTests,
+    subDelegateTests,
 };

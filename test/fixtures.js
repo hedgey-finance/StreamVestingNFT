@@ -130,9 +130,32 @@ async function preMintedStreaming(bound, amountParams, timeParams) {
   }
 }
 
+async function subDelegateSetup() {
+  const s = await setupStreaming(false);
+  const streaming = s.streaming;
+  const SubDelegatation = await ethers.getContractFactory('SubDelegation');
+  const subDelegation = await SubDelegatation.deploy(streaming.address);
+  const a = s.a;
+  const b = s.b;
+  const c = s.c;
+  const creator = s.creator;
+  const token = s.token;
+  return {
+    creator,
+    a,
+    b,
+    c,
+    token,
+    streaming,
+    subDelegation
+  }
+}
+
+
 module.exports = {
   setupVesting,
   setupStreaming,
   peMintedVesting,
   preMintedStreaming,
+  subDelegateSetup,
 };
