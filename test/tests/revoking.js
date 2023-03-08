@@ -38,6 +38,8 @@ const revokeTest = (amountParams, timeParams, transferLock) => {
     let now = await time.latest();
     let start = now + timeParams.startShift;
     let cliff = now + timeParams.cliffShift;
+    let end = C.calculateEnd(amount, rate, start);
+    cliff = Math.min(cliff, end);
     let unlock = now + timeParams.unlockShift;
     await streaming.createLockedNFT(
       a.address,

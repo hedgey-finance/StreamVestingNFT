@@ -87,6 +87,8 @@ async function peMintedVesting(amountParams, timeParams) {
     let rate = amountParams.rates[i];
     let start = timeParams.starts[i] + now;
     let cliff = timeParams.cliffs[i] + now;
+    let end = C.calculateEnd(amount, rate, start);
+    cliff = Math.min(cliff, end);
     let unlock = timeParams.unlocks[i] + now;
     let admin = s.creator.address;
     let tokenAddress = token.address;
@@ -117,6 +119,8 @@ async function preMintedStreaming(bound, amountParams, timeParams) {
     let rate = amountParams.rates[i];
     let start = timeParams.starts[i] + now;
     let cliff = timeParams.cliffs[i] + now;
+    let end = C.calculateEnd(amount, rate, start);
+    cliff = Math.min(cliff, end);
     let tokenAddress = i % 2 == 0 ? token.address : usdc.address;
     await streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate);
   }

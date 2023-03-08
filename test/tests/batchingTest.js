@@ -31,11 +31,12 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
       recipients.push(a.address);
       totalAmount = totalAmount.add(amountParams.amounts[i]);
       starts.push(timeParams.starts[i] + now);
-      cliffs.push(timeParams.cliffs[i] + now);
+      let cliff = (timeParams.cliffs[i] + now);
       unlocks.push(timeParams.unlocks[i] + now);
-      let end = amountParams.amounts[i] / amountParams.rates[i] + starts[i];
-      end += amountParams.amounts[i] % amountParams.rates[i] ? 0 : 1;
+      let end = C.calculateEnd(amountParams.amounts[i], amountParams.rates[i], timeParams.starts[i] + now);
       ends.push(end);
+      cliff = Math.min(end, cliff);
+      cliffs.push(cliff);
     }
     if (vesting) {
       if (locked) {
@@ -147,11 +148,12 @@ const batchTests = (vesting, locked, bound, amountParams, timeParams) => {
       recipients.push(b.address);
       totalAmount = totalAmount.add(amountParams.amounts[i]);
       starts.push(timeParams.starts[i] + now);
-      cliffs.push(timeParams.cliffs[i] + now);
       unlocks.push(timeParams.unlocks[i] + now);
-      let end = amountParams.amounts[i] / amountParams.rates[i] + starts[i];
-      end += amountParams.amounts[i] % amountParams.rates[i] ? 0 : 1;
+      let end = C.calculateEnd(amountParams.amounts[i], amountParams.rates[i], timeParams.starts[i] + now);
       ends.push(end);
+      let cliff = (timeParams.cliffs[i] + now);
+      cliff = Math.min(end, cliff);
+      cliffs.push(cliff);
     }
     if (vesting) {
       if (locked) {

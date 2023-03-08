@@ -98,7 +98,7 @@ describe('Testing the Batch Minter contracts', () => {
     { amounts: [C.randomBigNum(6, 100, 10), C.randomBigNum(6, 100, 12), C.randomBigNum(7, 100, 11)], rates: [C.E6_10, C.E6_10, C.E6_10] },
   ];
   const timeParamsMatrix = [
-    { starts: [0, 1, -10], cliffs: [0, 5, 10], unlocks: [0, 3, -5] },
+    { starts: [0, 1, -10], cliffs: [0, 1, -10], unlocks: [0, 5, 0] },
     { starts: [-50, -100, -200], cliffs: [-50, -50, -50], unlocks: [-25, 0, -50] },
     { starts: [50, 100, 200], cliffs: [75, 150, 500], unlocks: [100, 200, 1000] },
   ];

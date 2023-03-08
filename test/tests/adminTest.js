@@ -21,8 +21,4 @@ module.exports = (vesting, bound) => {
   it('will fail if a non-admin calls the function', async () => {
     await expect(streaming.connect(a).updateBaseURI(uri)).to.be.revertedWith('SV01');
   });
-  it('Admin will delete itself from the contract', async () => {
-    expect(await streaming.deleteAdmin());
-    await expect(streaming.updateBaseURI(uri)).to.be.revertedWith('SV01');
-  });
 };

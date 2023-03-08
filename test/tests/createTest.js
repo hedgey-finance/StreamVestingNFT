@@ -44,6 +44,7 @@ const createTests = (vesting, locked, bound, amountParams, timeParams) => {
     admin = creator.address;
     unlock = timeParams.unlockShift + now;
     let end = C.calculateEnd(amount, rate, start);
+    cliff = Math.min(cliff, end);
     if (vesting) {
       if (locked) {
         const tx = await streaming.createLockedNFT(
@@ -287,6 +288,27 @@ const createErrorTests = (vesting, locked, bound) => {
       await expect(streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate)).to.be.revertedWith('SV05');
     }
   });
+  it('reverts if the cliff date exceeds the fully vested end date', async () => {
+    let tokenAddress = token.address;
+    amount = C.E18_10;
+    rate = C.E18_1;
+    start = await time.latest();
+    end = C.calculateEnd(amount, rate, start);
+    cliff = end + 1;
+    if (vesting) {
+      if (locked) {
+        await expect(
+          streaming.createLockedNFT(a.address, tokenAddress, amount, start, cliff, rate, admin, unlock, false)
+        ).to.be.revertedWith('SV12');
+      } else {
+        await expect(
+          streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate, admin)
+        ).to.be.revertedWith('SV12');
+      }
+    } else {
+      await expect(streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate)).to.be.revertedWith('SV12');
+    }
+  })
 };
 
 module.exports = {
