@@ -7,7 +7,6 @@ import './ERC721Delegate/ERC721Delegate.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
 import './libraries/StreamLibrary.sol';
-import "hardhat/console.sol";
 
 /**
  * @title An NFT representation of ownership of time locked tokens that unlock continuously per second
@@ -47,7 +46,7 @@ contract StreamingNFT is ERC721Delegate, ReentrancyGuard {
   event NFTCreated(
     uint256 indexed id,
     address indexed recipient,
-    address token,
+    address indexed token,
     uint256 amount,
     uint256 start,
     uint256 cliffDate,

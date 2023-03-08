@@ -55,8 +55,8 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   ///@notice Events when a new NFT (future) is created and one with a Future is redeemed (burned)
   event NFTCreated(
     uint256 indexed id,
-    address recipient,
-    address token,
+    address indexed recipient,
+    address indexed token,
     uint256 amount,
     uint256 start,
     uint256 cliffDate,
