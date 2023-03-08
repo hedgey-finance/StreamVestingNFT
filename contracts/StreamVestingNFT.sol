@@ -36,7 +36,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @dev start is the start date when token stream begins, this can be set at anytime including past and future
   /// @dev cliffDate is an optional field to add a single cliff date prior to which the tokens cannot be unlocked
   /// @dev rate is the number of tokens per second being streamed
-  /// @dev vestingAdmin is the address of a vesting administor that can revoke NFTs and pull unvested tokens to its wallet any time. 
+  /// @dev vestingAdmin is the address of a vesting administor that can revoke NFTs and pull unvested tokens to its wallet any time.
   /// @dev unlockDate is the date set for an optional lockup period, that the vested tokens may be subject to
   /// @dev in the case where there is an unlockDate, this is enforced via vested tokens being transferred to and minting an NFT of either the StreamingHedgeys or StreamingBoundHedgeys - determined by the true or false of this param
   struct Stream {
@@ -100,12 +100,6 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     require(msg.sender == admin, 'SV01');
     baseURI = _uri;
     emit URISet(_uri);
-  }
-
-  /// @notice function to delete the admin - after the URI has been set and does not need to be reset, the admin can be deleted for safety
-  function deleteAdmin() external {
-    require(msg.sender == admin, 'SV01');
-    delete admin;
   }
 
   /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens
@@ -173,6 +167,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
+    require(cliffDate <= end, 'SV12');
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
     streams[newItemId] = Stream(token, amount, start, cliffDate, rate, vestingAdmin, unlockDate, transferableNFTLocker);
     _safeMint(recipient, newItemId);
@@ -340,7 +335,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @dev function to calculate the end date in seconds of a given unlock stream
   /// @param tokenId is the NFT token ID
-  function getStreamEnd(uint256 tokenId) public view returns (uint256 end) {
+  function getStreamEnd(uint256 tokenId) external view returns (uint256 end) {
     Stream memory stream = streams[tokenId];
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
@@ -349,7 +344,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// this is useful for snapshot voting and other view methods to see the total balances of a given user for a single token
   /// @param holder is the owner of the NFTs
   /// @param token is the address of the token that is locked by each of the NFTs
-  function lockedBalances(address holder, address token) public view returns (uint256 lockedBalance) {
+  function lockedBalances(address holder, address token) external view returns (uint256 lockedBalance) {
     uint256 holdersBalance = balanceOf(holder);
     for (uint256 i; i < holdersBalance; i++) {
       uint256 tokenId = tokenOfOwnerByIndex(holder, i);
@@ -364,7 +359,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// this is useful for snapshot voting and other view methods to see the total balances of a given user for a single token
   /// @param delegate is the wallet that has been delegated NFTs
   /// @param token is the address of the token that is locked by each of the NFTs
-  function delegatedBalances(address delegate, address token) public view returns (uint256 delegatedBalance) {
+  function delegatedBalances(address delegate, address token) external view returns (uint256 delegatedBalance) {
     uint256 delegateBalance = balanceOfDelegate(delegate);
     for (uint256 i; i < delegateBalance; i++) {
       uint256 tokenId = tokenOfDelegateByIndex(delegate, i);
