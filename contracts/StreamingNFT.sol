@@ -7,6 +7,7 @@ import './ERC721Delegate/ERC721Delegate.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import './libraries/TransferHelper.sol';
 import './libraries/StreamLibrary.sol';
+import "hardhat/console.sol";
 
 /**
  * @title An NFT representation of ownership of time locked tokens that unlock continuously per second
@@ -16,14 +17,14 @@ import './libraries/StreamLibrary.sol';
  * @author alex michelsen aka icemanparachute
  */
 
-contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
+contract StreamingNFT is ERC721Delegate, ReentrancyGuard {
   using Counters for Counters.Counter;
   Counters.Counter private _tokenIds;
 
   /// @dev baseURI is the URI directory where the metadata is stored
   string private baseURI;
   /// @dev admin for setting the baseURI;
-  address private admin;
+  address internal admin;
 
   /// @dev the Stream is the storage in a struct of the tokens that are currently being streamed
   /// @dev token is the token address being streamed
@@ -80,12 +81,6 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     emit URISet(_uri);
   }
 
-  /// @notice function to delete the admin - after the URI has been set and does not need to be reset, the admin can be deleted for safety
-  function deleteAdmin() external {
-    require(msg.sender == admin, 'SV01');
-    delete admin;
-  }
-
   /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time locked stream of tokens
   /// @param recipient is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
   /// @param token is the token address of the tokens that will be locked inside the stream
@@ -110,6 +105,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
+    require(cliffDate <= end, 'SV12');
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
     streams[newItemId] = Stream(token, amount, start, cliffDate, rate);
     _safeMint(recipient, newItemId);
@@ -119,7 +115,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   /// @dev function to delegate specific tokens to another wallt for voting
   /// @param delegate is the address of the wallet to delegate the NFTs to
   /// @param tokenIds is the array of tokens that we want to delegate
-  function delegateToken(address delegate, uint[] memory tokenIds) external {
+  function delegateToken(address delegate, uint256[] memory tokenIds) external {
     for (uint256 i; i < tokenIds.length; i++) {
       _delegateToken(delegate, tokenIds[i]);
     }
@@ -135,17 +131,6 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-  /// @dev function to transfer and redeem tokens
-  /// @dev this is helpful because tokens are continuously unlocking, this function will unlock the max amount of tokens prior to a transfer to ensure no leftover
-  /// @dev the token must have a remainder or else it cannot be transferred
-  /// @param tokenId is the id of the the NFT token
-  /// @param to is the address the NFT is being transferred to
-  function redeemAndTransfer(uint256 tokenId, address to) external nonReentrant {
-    uint256 remainder = _redeemNFT(msg.sender, tokenId);
-    require(remainder > 0, 'SV11');
-    _transfer(msg.sender, to, tokenId);
-  }
-
   /// @notice function to redeem a single or multiple NFT streams
   /// @param tokenIds is an array of tokens that are passed in to be redeemed
   function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
@@ -156,7 +141,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   /// @dev pulls the balance and uses the enumerate function to redeem each NFT based on their index id
   /// this function will not revert if there is no balance, it will simply redeem all NFTs owned by the msg.sender that have a balance
   function redeemAllNFTs() external nonReentrant {
-    uint bal = balanceOf(msg.sender);
+    uint256 bal = balanceOf(msg.sender);
     uint256[] memory tokenIds = new uint256[](bal);
     for (uint256 i; i < bal; i++) {
       //check the balance of the vest first
@@ -216,7 +201,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
 
   /// @dev function to calculate the end date in seconds of a given unlock stream
   /// @param tokenId is the NFT token ID
-  function getStreamEnd(uint256 tokenId) public view returns (uint256 end) {
+  function getStreamEnd(uint256 tokenId) external view returns (uint256 end) {
     Stream memory stream = streams[tokenId];
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
@@ -225,7 +210,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   /// this is useful for snapshot voting and other view methods to see the total balances of a given user for a single token
   /// @param holder is the owner of the NFTs
   /// @param token is the address of the token that is locked by each of the NFTs
-  function lockedBalances(address holder, address token) public view returns (uint256 lockedBalance) {
+  function lockedBalances(address holder, address token) external view returns (uint256 lockedBalance) {
     uint256 holdersBalance = balanceOf(holder);
     for (uint256 i; i < holdersBalance; i++) {
       uint256 tokenId = tokenOfOwnerByIndex(holder, i);
@@ -240,7 +225,7 @@ contract StreamingHedgeys is ERC721Delegate, ReentrancyGuard {
   /// this is useful for snapshot voting and other view methods to see the total balances of a given user for a single token
   /// @param delegate is the wallet that has been delegated NFTs
   /// @param token is the address of the token that is locked by each of the NFTs
-  function delegatedBalances(address delegate, address token) public view returns (uint256 delegatedBalance) {
+  function delegatedBalances(address delegate, address token) external view returns (uint256 delegatedBalance) {
     uint256 delegateBalance = balanceOfDelegate(delegate);
     for (uint256 i; i < delegateBalance; i++) {
       uint256 tokenId = tokenOfDelegateByIndex(delegate, i);
