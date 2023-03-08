@@ -1,20 +1,16 @@
 // SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts v4.4.1 (token/ERC721/extensions/ERC721Enumerable.sol)
 
 pragma solidity 0.8.17;
 
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol';
+import './IERC721Delegate.sol';
 
 /**
- * @dev This implements an optional extension of {ERC721} defined in the EIP that adds
- * enumerability of all the token ids in the contract as well as all token ids owned by each
- * account.
+ * @dev This implements an optional extension of {ERC721Enumerable} defined in the EIP that adds
+ * enumerability and delegation ability of all the token ids in the contract as well as all token ids owned by each
+ * account. When tokens are delegated, they are not moved this is simply for voting purposes.
  */
-
-/// @notice this is an ERC721Enumerable Contract
-/// but with the additional added functionality that you can delegate your NFT to someone else, for the sole puprose that that NFT has voting rights
-abstract contract ERC721Delegate is ERC721 {
+abstract contract ERC721Delegate is ERC721, IERC721Delegate {
   // Mapping from owner to list of owned token IDs
   mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
 
@@ -27,14 +23,77 @@ abstract contract ERC721Delegate is ERC721 {
   // Mapping from token id to position in the allTokens array
   mapping(uint256 => uint256) private _allTokensIndex;
 
+  /**
+   * @dev See {IERC165-supportsInterface}.
+   */
+  function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721) returns (bool) {
+    return interfaceId == type(IERC721Delegate).interfaceId || super.supportsInterface(interfaceId);
+  }
+
+  /**
+   * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
+   */
+  function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
+    require(index < ERC721.balanceOf(owner), 'ERC721Enumerable: owner index out of bounds');
+    return _ownedTokens[owner][index];
+  }
+
+  /**
+   * @dev See {IERC721Enumerable-totalSupply}.
+   */
+  function totalSupply() public view virtual override returns (uint256) {
+    return _allTokens.length;
+  }
+
+  /**
+   * @dev See {IERC721Enumerable-tokenByIndex}.
+   */
+  function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
+    require(index < totalSupply(), 'ERC721Enumerable: global index out of bounds');
+    return _allTokens[index];
+  }
+
+  /**
+   * @dev See {ERC721-_beforeTokenTransfer}.
+   */
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 firstTokenId,
+    uint256 batchSize
+  ) internal virtual override {
+    super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+
+    if (batchSize > 1) {
+      // Will only trigger during construction. Batch transferring (minting) is not available afterwards.
+      revert('ERC721Enumerable: consecutive transfers not supported');
+    }
+
+    uint256 tokenId = firstTokenId;
+
+    if (from == address(0)) {
+      _addTokenToAllTokensEnumeration(tokenId);
+      _addDelegate(to, tokenId);
+    } else if (from != to) {
+      _removeTokenFromOwnerEnumeration(from, tokenId);
+      if (to != address(0)) _transferDelegate(to, tokenId);
+    }
+    if (to == address(0)) {
+      _removeTokenFromAllTokensEnumeration(tokenId);
+      _removeDelegate(tokenId);
+    } else if (to != from) {
+      _addTokenToOwnerEnumeration(to, tokenId);
+    }
+  }
+
   //*************DELEGATE SECTION***********************************************************************************************************/
 
   event TokenDelegated(uint256 indexed tokenId, address delegate);
+  event DelegateRemoved(uint256 indexed tokenId);
 
   function _delegateToken(address delegate, uint256 tokenId) internal {
-    require(msg.sender == ERC721.ownerOf(tokenId),'!owner');
-    address currentDelegate = _delegates[tokenId];
-    _transferDelegate(currentDelegate, delegate, tokenId);
+    require(msg.sender == ERC721.ownerOf(tokenId), '!owner');
+    _transferDelegate(delegate, tokenId);
   }
 
   // function for minting should add the token to the delegate and increase the balance
@@ -61,14 +120,11 @@ abstract contract ERC721Delegate is ERC721 {
     delete _delegatedTokens[from][lastTokenIndex];
     _delegateBalances[from] -= 1;
     _delegates[tokenId] = address(0);
+    emit DelegateRemoved(tokenId);
   }
 
   // function for transfering should reduce the balances of from by 1, increase the balances of to by 1, and set the delegate address To
-  function _transferDelegate(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal {
+  function _transferDelegate(address to, uint256 tokenId) internal {
     _removeDelegate(tokenId);
     _addDelegate(to, tokenId);
   }
@@ -102,75 +158,6 @@ abstract contract ERC721Delegate is ERC721 {
   }
 
   //*********************************************************************************************************************************************************************/
-  /**
-   * @dev See {IERC165-supportsInterface}.
-   */
-  function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721) returns (bool) {
-    return interfaceId == type(IERC721Enumerable).interfaceId || super.supportsInterface(interfaceId);
-  }
-
-  /**
-   * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
-   */
-  function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual returns (uint256) {
-    require(index < ERC721.balanceOf(owner), 'ERC721Enumerable: owner index out of bounds');
-    return _ownedTokens[owner][index];
-  }
-
-  /**
-   * @dev See {IERC721Enumerable-totalSupply}.
-   */
-  function totalSupply() public view virtual returns (uint256) {
-    return _allTokens.length;
-  }
-
-  /**
-   * @dev See {IERC721Enumerable-tokenByIndex}.
-   */
-  function tokenByIndex(uint256 index) public view virtual returns (uint256) {
-    require(index < ERC721Delegate.totalSupply(), 'ERC721Enumerable: global index out of bounds');
-    return _allTokens[index];
-  }
-
-  /**
-   * @dev Hook that is called before any token transfer. This includes minting
-   * and burning.
-   *
-   * Calling conditions:
-   *
-   * - When `from` and `to` are both non-zero, ``from``'s `tokenId` will be
-   * transferred to `to`.
-   * - When `from` is zero, `tokenId` will be minted for `to`.
-   * - When `to` is zero, ``from``'s `tokenId` will be burned.
-   * - `from` cannot be the zero address.
-   * - `to` cannot be the zero address.
-   *
-   * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-   */
-  function _beforeTokenTransfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual override {
-    super._beforeTokenTransfer(from, to, tokenId);
-
-    if (from == address(0)) {
-      _addTokenToAllTokensEnumeration(tokenId);
-      //minting we add the delegate
-      _addDelegate(to, tokenId);
-    } else if (from != to) {
-      _removeTokenFromOwnerEnumeration(from, tokenId);
-      // transferring we transfer, but need ensure its not being burned
-      if (to != address(0)) _transferDelegate(from, to, tokenId);
-    }
-    if (to == address(0)) {
-      _removeTokenFromAllTokensEnumeration(tokenId);
-      // if burned we simply remove
-      _removeDelegate(tokenId);
-    } else if (to != from) {
-      _addTokenToOwnerEnumeration(to, tokenId);
-    }
-  }
 
   /**
    * @dev Private function to add a token to this extension's ownership-tracking data structures.
