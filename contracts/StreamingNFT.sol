@@ -114,7 +114,7 @@ contract StreamingNFT is ERC721Delegate, ReentrancyGuard {
   /// @dev function to delegate specific tokens to another wallt for voting
   /// @param delegate is the address of the wallet to delegate the NFTs to
   /// @param tokenIds is the array of tokens that we want to delegate
-  function delegateToken(address delegate, uint256[] memory tokenIds) external {
+  function delegateTokens(address delegate, uint256[] memory tokenIds) external {
     for (uint256 i; i < tokenIds.length; i++) {
       _delegateToken(delegate, tokenIds[i]);
     }
