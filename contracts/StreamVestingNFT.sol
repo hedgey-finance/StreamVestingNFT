@@ -167,7 +167,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
     uint256 end = StreamLibrary.endDate(start, rate, amount);
-    require(cliffDate <= end, 'SV12');
+    require(cliffDate <= end && (unlockDate <= end + 3650 days), 'SV12');
     TransferHelper.transferTokens(token, msg.sender, address(this), amount);
     streams[newItemId] = Stream(token, amount, start, cliffDate, rate, vestingAdmin, unlockDate, transferableNFTLocker);
     _safeMint(recipient, newItemId);
@@ -207,7 +207,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @notice function to redeem a single or multiple NFT streams
   /// @param tokenIds is an array of tokens that are passed in to be redeemed
-  function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
+  function redeemNFTs(uint256[] memory tokenIds) external nonReentrant {
     _redeemNFTs(tokenIds);
   }
 
@@ -227,7 +227,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @dev function for the vestingAdmin to revoke tokens if someone is no longer supposed to recieve their vesting stream
   /// @param tokenIds are the tokens that are going to be revoked
-  function revokeNFT(uint256[] memory tokenIds) external nonReentrant {
+  function revokeNFTs(uint256[] memory tokenIds) external nonReentrant {
     for (uint256 i; i < tokenIds.length; i++) {
       _revokeNFT(msg.sender, tokenIds[i]);
     }

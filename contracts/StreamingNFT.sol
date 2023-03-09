@@ -132,7 +132,7 @@ contract StreamingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @notice function to redeem a single or multiple NFT streams
   /// @param tokenIds is an array of tokens that are passed in to be redeemed
-  function redeemNFT(uint256[] memory tokenIds) external nonReentrant {
+  function redeemNFTs(uint256[] memory tokenIds) external nonReentrant {
     _redeemNFTs(tokenIds);
   }
 
