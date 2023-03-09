@@ -65,7 +65,7 @@ module.exports = (vesting, locks, bound, amountParams, timeParams) => {
     // should equal rate * timeshift
     expect(balances.balance).to.eq(calculatedBalance);
     expect(balances.remainder).to.eq(amount.sub(calculatedBalance));
-    const tx = await streaming.connect(a).redeemNFT(['1']);
+    const tx = await streaming.connect(a).redeemNFTs(['1']);
     expect(tx).to.emit(streaming, 'NFTRedeemed');
     const receipt = await tx.wait();
     const event = receipt.events[receipt.events.length - 1];
@@ -83,7 +83,7 @@ module.exports = (vesting, locks, bound, amountParams, timeParams) => {
       await time.increaseTo(end);
       balances = await streaming.streamBalanceOf('1');
       expect(balances.balance).to.eq(finalAmount);
-      expect(await streaming.connect(a).redeemNFT(['1']))
+      expect(await streaming.connect(a).redeemNFTs(['1']))
         .to.emit('NFTRedeemed')
         .withArgs('1', finalAmount, 0);
       tokenBalanceofA = await token.balanceOf(a.address);

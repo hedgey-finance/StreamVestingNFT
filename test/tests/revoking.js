@@ -61,7 +61,7 @@ const revokeTest = (amountParams, timeParams, transferLock) => {
     let balance = vestingBalances.balance;
     let remainder = vestingBalances.remainder;
     if (remainder > 0) {
-      expect(await streaming.revokeNFT(['1']))
+      expect(await streaming.revokeNFTs(['1']))
         .to.emit('NFTRevoked')
         .withArgs('1', balance, remainder);
       // contract should be empty, and remainder transferred to the admin
@@ -125,18 +125,18 @@ const revokeErrorTests = () => {
     start = now - 10;
     cliff = start;
     await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, vestingAdmin);
-    await expect(streaming.revokeNFT(['1'])).to.be.revertedWith('SV10')
+    await expect(streaming.revokeNFTs(['1'])).to.be.revertedWith('SV10')
     });
     it(`cannot be revoked if it has already been revoked`, async () => {
         start = await time.latest() + 500;
         await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, vestingAdmin);
-        await streaming.revokeNFT(['2']);
-        await expect(streaming.revokeNFT(['2'])).to.be.reverted;
+        await streaming.revokeNFTs(['2']);
+        await expect(streaming.revokeNFTs(['2'])).to.be.reverted;
     });
     it(`will revert if a wallet that is not the admin tries to revoke`, async () => {
         
         await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, vestingAdmin);
-        await expect(streaming.connect(a).revokeNFT(['3'])).to.be.revertedWith('SV09');
+        await expect(streaming.connect(a).revokeNFTs(['3'])).to.be.revertedWith('SV09');
     });
 }
 

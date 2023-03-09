@@ -72,7 +72,7 @@ const delegateTests = () => {
     const lockedAmount = stream.amount;
     const total = amount.add(C.E18_100);
 
-    expect(await streaming.connect(a).delegateToken(b.address, [id]))
+    expect(await streaming.connect(a).delegateTokens(b.address, [id]))
       .to.emit('TokenDelegated')
       .withArgs(id, b.address);
 
@@ -96,7 +96,7 @@ const delegateTests = () => {
   });
   it('Wallet A delegates the token 2 back to itself', async () => {
     const id = '2';
-    expect(await streaming.connect(a).delegateToken(a.address, [id]))
+    expect(await streaming.connect(a).delegateTokens(a.address, [id]))
       .to.emit('TokenDelegated')
       .withArgs(id, a.address);
     const lockedBalance = await streaming.lockedBalances(a.address, token.address);
@@ -170,7 +170,7 @@ const delegateTests = () => {
     // ids to delegate
     const c2 = '3';
     const c2Amount = (await streaming.streams(c2)).amount;
-    expect(await streaming.connect(a).delegateToken(c.address, [c2]))
+    expect(await streaming.connect(a).delegateTokens(c.address, [c2]))
       .to.emit('TokenDelegated')
       .withArgs(c2, c.address);
     delegatdBalanceA = await streaming.delegatedBalances(a.address, token.address);
@@ -233,7 +233,7 @@ const delegateTests = () => {
     const preDelegateBalance = await streaming.delegatedBalances(creator.address, usdc.address);
 
     await time.increase(10);
-    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const receipt = await (await streaming.redeemNFTs([tokenId])).wait();
     const balance = receipt.events[1].args.balance;
 
     const postLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
@@ -247,13 +247,13 @@ const delegateTests = () => {
     await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate);
     const balanceOf = await streaming.balanceOf(creator.address);
     const tokenId = await streaming.tokenOfOwnerByIndex(creator.address, balanceOf - 1);
-    await streaming.delegateToken(c.address, [tokenId]);
+    await streaming.delegateTokens(c.address, [tokenId]);
 
     const preLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
     const preDelegateBalance = await streaming.delegatedBalances(c.address, usdc.address);
 
     await time.increase(10);
-    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const receipt = await (await streaming.redeemNFTs([tokenId])).wait();
     const balance = receipt.events[1].args.balance;
 
     const postLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
@@ -275,7 +275,7 @@ const delegateTests = () => {
     const preDelegateBalance = await streaming.delegatedBalances(creator.address, usdc.address);
 
     await time.increase(10);
-    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const receipt = await (await streaming.redeemNFTs([tokenId])).wait();
     const balance = receipt.events[receipt.events.length - 1].args.balance;
     const postLockedBalance = await streaming.lockedBalances(creator.address, usdc.address);
     const postDelegatedBalance = await streaming.delegatedBalances(creator.address, usdc.address);
@@ -291,12 +291,12 @@ const delegateTests = () => {
     const tx = await (await streaming.createNFT(creator.address, usdc.address, amount, start, cliff, rate)).wait();
     const event = tx.events[tx.events.length - 1];
     const tokenId = event.args.id;
-    await streaming.delegateToken(c.address, [tokenId]);
+    await streaming.delegateTokens(c.address, [tokenId]);
 
     const preDelegateBalance = await streaming.delegatedBalances(c.address, usdc.address);
 
     await time.increase(10);
-    const receipt = await (await streaming.redeemNFT([tokenId])).wait();
+    const receipt = await (await streaming.redeemNFTs([tokenId])).wait();
     const balance = receipt.events[receipt.events.length - 1].args.balance;
     
     const postDelegatedBalance = await streaming.delegatedBalances(c.address, usdc.address);

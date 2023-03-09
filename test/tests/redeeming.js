@@ -89,7 +89,7 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
       expect(streamingBalances.remainder).to.eq(0);
       const tokenBalanceOfContract = await lockedToken.balanceOf(streaming.address);
       const ownerBalance = await lockedToken.balanceOf(ownerOf);
-      expect(await streaming.connect(owner).redeemNFT([tokenId]))
+      expect(await streaming.connect(owner).redeemNFTs([tokenId]))
         .to.emit('NFTRedeemed')
         .withArgs(tokenId, amount, 0);
       const afterTokenBalanceofContract = await lockedToken.balanceOf(streaming.address);
@@ -111,7 +111,7 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
       const balanceCheckpoint = C.calculateBalances(start, cliff, amount, rate, checkPointTime);
       const remainder = balanceCheckpoint.remainder;
       const priorBalance = balanceCheckpoint.balance;
-      expect(await streaming.connect(owner).redeemNFT([tokenId]))
+      expect(await streaming.connect(owner).redeemNFTs([tokenId]))
         .to.emit('NFTRedeemed')
         .withArgs(tokenId, streamingBalances.balance, remainder);
       const afterTokenBalanceofContract = await lockedToken.balanceOf(streaming.address);
@@ -144,10 +144,10 @@ const redeemTest = (vesting, bound, amountParams, timeParams) => {
       expect(duplicateBalances.balance).to.eq(priorBalance.add(tokenBalances.balance));
 
       // check that both can be redeemed again
-      expect(await streaming.connect(owner).redeemNFT([tokenId]))
+      expect(await streaming.connect(owner).redeemNFTs([tokenId]))
         .to.emit('NFTRedeemed')
         .withArgs(tokenId, tokenBalances.balance, tokenBalances.remainder);
-      expect(await streaming.connect(owner).redeemNFT([dupTokenId]))
+      expect(await streaming.connect(owner).redeemNFTs([dupTokenId]))
         .to.emit('NFTRedeemed')
         .withArgs(dupTokenId, duplicateBalances.balance, duplicateBalances.remainder);
     }
@@ -177,7 +177,7 @@ const reedeemMulitpleTest = (vesting, bound, amountParams, timeParams) => {
       let unlock = vesting ? (await streaming.streams(i)).unlockDate : 0;
       if (now > Math.max(start, cliff, unlock)) tokens.push(tokenId);
     }
-    const tx = await streaming.connect(a).redeemNFT(tokens);
+    const tx = await streaming.connect(a).redeemNFTs(tokens);
     for (let i = 0; i < balanceOfA; i++) {
       expect(await tx)
         .to.emit('NFTRedeemed')
@@ -271,7 +271,7 @@ const transferAndRedeemTest = (amountParams, timeParams) => {
       expect(balanceOfB).to.eq(1);
       expect(await streaming.ownerOf(tokenId)).to.eq(b.address);
       await time.increase(5);
-      expect(await streaming.connect(b).redeemNFT([tokenId])).to.emit('NFTRedeemed');
+      expect(await streaming.connect(b).redeemNFTs([tokenId])).to.emit('NFTRedeemed');
     }
   });
   it(`fails to redeem and transfer if there is no remainder`, async () => {
@@ -321,8 +321,8 @@ const redeemErrorTests = (vesting, bound) => {
       ? await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, creator.address)
       : await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
     //process redemption
-    await streaming.connect(a).redeemNFT(['1']);
-    const retry = await streaming.connect(a).redeemNFT(['1']);
+    await streaming.connect(a).redeemNFTs(['1']);
+    const retry = await streaming.connect(a).redeemNFTs(['1']);
     const events = (await retry.wait()).events;
     // test that on the rety the redemption internal event is entirely skipped and nothing processed
     expect(events.length).to.eq(0);
@@ -333,7 +333,7 @@ const redeemErrorTests = (vesting, bound) => {
       ? await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, creator.address)
       : await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
     //process redemption
-    const retry = await streaming.connect(a).redeemNFT(['2']);
+    const retry = await streaming.connect(a).redeemNFTs(['2']);
     const events = (await retry.wait()).events;
     expect(events.length).to.eq(0);
   });
@@ -342,7 +342,7 @@ const redeemErrorTests = (vesting, bound) => {
     const tx = vesting
       ? await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, creator.address)
       : await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
-    await expect(streaming.redeemNFT(['3'])).to.be.revertedWith('06');
+    await expect(streaming.redeemNFTs(['3'])).to.be.revertedWith('SV06');
   });
   it(`will revert if the NFT has been revoked for the vesting NFTs`, async () => {
     if (vesting) {
@@ -351,8 +351,8 @@ const redeemErrorTests = (vesting, bound) => {
       cliff = start;
       rate = C.E18_1;
       await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, creator.address);
-      await streaming.revokeNFT(['4']);
-      const retry = await streaming.connect(a).redeemNFT(['4']);
+      await streaming.revokeNFTs(['4']);
+      const retry = await streaming.connect(a).redeemNFTs(['4']);
       const events = (await retry.wait()).events;
       expect(events.length).to.eq(0);
     }
