@@ -134,7 +134,8 @@ contract StreamingNFT is ERC721Delegate, ReentrancyGuard {
   /// it pulls any tokens of the owner and delegates the NFT to the delegate address
   /// @param delegate is the address of the delegate
   function delegateAllNFTs(address delegate) external {
-    for (uint256 i; i < balanceOf(msg.sender); i++) {
+    uint256 balance = balanceOf(msg.sender);
+    for (uint256 i; i < balance; i++) {
       uint256 tokenId = _tokenOfOwnerByIndex(msg.sender, i);
       _delegateToken(delegate, tokenId);
     }
@@ -150,9 +151,9 @@ contract StreamingNFT is ERC721Delegate, ReentrancyGuard {
   /// @dev pulls the balance and uses the enumerate function to redeem each NFT based on their index id
   /// this function will not revert if there is no balance, it will simply redeem all NFTs owned by the msg.sender that have a balance
   function redeemAllNFTs() external nonReentrant {
-    uint256 bal = balanceOf(msg.sender);
-    uint256[] memory tokenIds = new uint256[](bal);
-    for (uint256 i; i < bal; i++) {
+    uint256 balance = balanceOf(msg.sender);
+    uint256[] memory tokenIds = new uint256[](balance);
+    for (uint256 i; i < balance; i++) {
       //check the balance of the vest first
       uint256 tokenId = _tokenOfOwnerByIndex(msg.sender, i);
       tokenIds[i] = tokenId;
