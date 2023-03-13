@@ -2,26 +2,7 @@
 pragma solidity 0.8.17;
 
 interface IVestingNFT {
-  event NFTCreated(
-    uint256 indexed id,
-    address recipient,
-    address token,
-    uint256 amount,
-    uint256 start,
-    uint256 cliffDate,
-    uint256 end,
-    uint256 rate,
-    address manager,
-    uint256 unlockDate,
-    bool transferableNFTLockers
-  );
-  event NFTRevoked(uint256 indexed id, uint256 balance, uint256 remainder);
-  event NFTRedeemed(uint256 indexed id, uint256 balance, uint256 remainder);
-  event URISet(string newURI);
-
   function updateBaseURI(string memory _uri) external;
-
-  function deleteAdmin() external;
 
   function createNFT(
     address recipient,
@@ -45,11 +26,11 @@ interface IVestingNFT {
     bool transferableNFTLockers
   ) external;
 
-  function revokeNFT(uint256[] memory tokenId) external;
+  function revokeNFTs(uint256[] memory tokenId) external;
 
-  function redeemNFT(uint256[] memory tokenId) external;
+  function redeemNFTs(uint256[] memory tokenId) external;
 
-  function delegateToken(address delegate, uint256[] memory tokenIds) external;
+  function delegateTokens(address delegate, uint256[] memory tokenIds) external;
 
   function delegateAllNFTs(address delegate) external;
 

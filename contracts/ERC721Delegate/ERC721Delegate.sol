@@ -38,6 +38,10 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
     return _ownedTokens[owner][index];
   }
 
+  function _tokenOfOwnerByIndex(address owner, uint256 index) internal view returns (uint256) {
+    return _ownedTokens[owner][index];
+  }
+
   /**
    * @dev See {IERC721Enumerable-totalSupply}.
    */
@@ -52,6 +56,8 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
     require(index < totalSupply(), 'ERC721Enumerable: global index out of bounds');
     return _allTokens[index];
   }
+
+  
 
   /**
    * @dev See {ERC721-_beforeTokenTransfer}.

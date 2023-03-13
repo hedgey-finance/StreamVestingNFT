@@ -200,7 +200,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @param delegate is the address of the delegate
   function delegateAllNFTs(address delegate) external {
     for (uint256 i; i < balanceOf(msg.sender); i++) {
-      uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
+      uint256 tokenId = _tokenOfOwnerByIndex(msg.sender, i);
       _delegateToken(delegate, tokenId);
     }
   }
@@ -219,7 +219,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     uint256[] memory tokenIds = new uint256[](bal);
     for (uint256 i; i < bal; i++) {
       //check the balance of the vest first
-      uint256 tokenId = tokenOfOwnerByIndex(msg.sender, i);
+      uint256 tokenId = _tokenOfOwnerByIndex(msg.sender, i);
       tokenIds[i] = tokenId;
     }
     _redeemNFTs(tokenIds);
@@ -347,7 +347,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   function lockedBalances(address holder, address token) external view returns (uint256 lockedBalance) {
     uint256 holdersBalance = balanceOf(holder);
     for (uint256 i; i < holdersBalance; i++) {
-      uint256 tokenId = tokenOfOwnerByIndex(holder, i);
+      uint256 tokenId = _tokenOfOwnerByIndex(holder, i);
       Stream memory stream = streams[tokenId];
       if (token == stream.token) {
         lockedBalance += stream.amount;
