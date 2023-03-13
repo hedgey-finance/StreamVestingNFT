@@ -25,6 +25,8 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @dev baseURI is the URI directory where the metadata is stored
   string private baseURI;
+  /// @dev bool to ensure uri has been set before admin can be deleted
+  bool private uriSet;
   /// @dev admin for setting the baseURI;
   address private admin;
 
@@ -99,7 +101,15 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   function updateBaseURI(string memory _uri) external {
     require(msg.sender == admin, 'SV01');
     baseURI = _uri;
+    uriSet = true;
     emit URISet(_uri);
+  }
+
+  /// @notice function to delete the admin once the uri has been set
+  function deleteAdmin() external {
+    require(msg.sender == admin, 'SV01');
+    require(uriSet, 'not set');
+    delete admin;
   }
 
   /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens
