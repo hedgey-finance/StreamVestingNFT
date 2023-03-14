@@ -308,7 +308,7 @@ const createErrorTests = (vesting, locked, bound) => {
     } else {
       await expect(streaming.createNFT(a.address, tokenAddress, amount, start, cliff, rate)).to.be.revertedWith('SV12');
     }
-  })
+  });
 };
 
 module.exports = {
