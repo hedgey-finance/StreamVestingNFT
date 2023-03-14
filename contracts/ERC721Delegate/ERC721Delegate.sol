@@ -103,7 +103,7 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
   }
 
   // function for minting should add the token to the delegate and increase the balance
-  function _addDelegate(address to, uint256 tokenId) internal {
+  function _addDelegate(address to, uint256 tokenId) private {
     uint256 length = _delegateBalances[to];
     _delegatedTokens[to][length] = tokenId;
     _delegatedTokensIndex[tokenId] = length;
@@ -113,7 +113,7 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
   }
 
   // function for burning should reduce the balances and set the token mapped to 0x0 address
-  function _removeDelegate(uint256 tokenId) internal {
+  function _removeDelegate(uint256 tokenId) private {
     address from = delegatedTo(tokenId);
     uint256 lastTokenIndex = _delegateBalances[from] - 1;
     uint256 tokenIndex = _delegatedTokensIndex[tokenId];
@@ -130,7 +130,7 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
   }
 
   // function for transfering should reduce the balances of from by 1, increase the balances of to by 1, and set the delegate address To
-  function _transferDelegate(address to, uint256 tokenId) internal {
+  function _transferDelegate(address to, uint256 tokenId) private {
     _removeDelegate(tokenId);
     _addDelegate(to, tokenId);
   }
