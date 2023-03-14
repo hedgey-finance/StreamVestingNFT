@@ -11,6 +11,7 @@ const {
 } = require('./tests/redeeming');
 const { revokeTest, revokeErrorTests } = require('./tests/revoking');
 const { delegateTests } = require('./tests/delegateTests');
+const transferErrorTest = require('./tests/transferErrorTest');
 
 const C = require('./constants');
 
@@ -180,3 +181,8 @@ describe('Testing the vesting contract for revoking NFTs', () => {
 describe('Testing the locked token balance, and delegation of locked balances', () => {
     delegateTests();
 });
+
+describe('Testing for the non transferable errors', () => {
+  transferErrorTest(true);
+  transferErrorTest(false);
+})
