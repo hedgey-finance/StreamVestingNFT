@@ -94,8 +94,8 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
 
   //*************DELEGATE SECTION***********************************************************************************************************/
 
-  event TokenDelegated(uint256 indexed tokenId, address delegate);
-  event DelegateRemoved(uint256 indexed tokenId);
+  event TokenDelegated(uint256 indexed tokenId, address indexed delegate);
+  event DelegateRemoved(uint256 indexed tokenId, address indexed delegate);
 
   function _delegateToken(address delegate, uint256 tokenId) internal {
     require(msg.sender == ERC721.ownerOf(tokenId), '!owner');
@@ -126,7 +126,7 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
     delete _delegatedTokens[from][lastTokenIndex];
     _delegateBalances[from] -= 1;
     _delegates[tokenId] = address(0);
-    emit DelegateRemoved(tokenId);
+    emit DelegateRemoved(tokenId, from);
   }
 
   // function for transfering should reduce the balances of from by 1, increase the balances of to by 1, and set the delegate address To

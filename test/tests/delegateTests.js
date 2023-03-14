@@ -4,7 +4,6 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const C = require('../constants');
 const { BigNumber } = require('ethers');
 
-
 /** This set of tests is to test the unique functionality of the contracts for recording locked token balances in aggregate
  * It should test if the locked balances function from the StreamLibrary and VestingLibrary work properly
  * So that we can see the token locked balances across a users entire owned NFTs
@@ -16,7 +15,7 @@ const { BigNumber } = require('ethers');
  * it should test that when a set of NFTs have been delegated to another wallet, if one of those NFTs is transferred the delegation is reset to the new owner and removed from the delegate
  */
 
-const delegateTests = () => {
+const delegateStreamingTests = () => {
   let streaming, creator, a, b, c, token, usdc;
   let amount, start, cliff, rate, end;
   it('When an NFT is minted the holder is the delegate', async () => {
@@ -65,6 +64,9 @@ const delegateTests = () => {
     expect(delegatetokens).to.eq('2');
     expect(delegateTo).to.eq(a.address);
     expect(tokenId).to.eq(newToken);
+    expect(await streaming.totalSupply()).to.eq(2);
+    expect(await streaming.tokenByIndex(1)).to.eq('2');
+    await expect(streaming.tokenByIndex(2)).to.be.revertedWith('ERC721Enumerable: global index out of bounds');
   });
   it('delegates a single token to another address', async () => {
     const id = '2';
@@ -298,13 +300,89 @@ const delegateTests = () => {
     await time.increase(10);
     const receipt = await (await streaming.redeemNFTs([tokenId])).wait();
     const balance = receipt.events[receipt.events.length - 1].args.balance;
-    
+
     const postDelegatedBalance = await streaming.delegatedBalances(c.address, usdc.address);
 
     expect(postDelegatedBalance).to.eq(preDelegateBalance.sub(balance));
   });
 };
 
+// Testing for the two non-transferable contracts
+// test that the delegates are assigned to the token holder on mint,
+// test that they are removed when the token is burned
+// and test the delegateTokens and delegateAllNFTs functions
+
+const delegateBoundTests = (vesting) => {
+  let streaming, creator, a, b, c, token;
+  let amount, start, cliff, rate, end, admin, tokenId;
+  it('When an NFT is minted, the recipient becomes the delegate', async () => {
+    s = vesting ? await setupVesting() : await setupStreaming(true);
+    now = await time.latest();
+    streaming = s.streaming;
+    creator = s.creator;
+    a = s.a;
+    b = s.b;
+    c = s.c;
+    token = s.token;
+    amount = C.E18_10;
+    start = now;
+    cliff = now;
+    rate = C.E18_10;
+    admin = creator.address;
+    tokenId = '1';
+    vesting ? await streaming.createNFT(a.address, token.address, amount, start, cliff, rate, admin) : await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
+    expect(await streaming.delegatedTo(tokenId)).to.eq(a.address);
+    expect(await streaming.balanceOfDelegate(a.address)).to.eq(1);
+    expect(await streaming.lockedBalances(a.address, token.address)).to.eq(amount);
+    expect(await streaming.delegatedBalances(a.address, token.address)).to.eq(amount);
+  });
+  it('wallet A delegates to wallet B, wallet B shows the balances', async () => {
+    expect(await streaming.connect(a).delegateAllNFTs(b.address))
+      .to.emit('DelegateRemoved')
+      .withArgs(tokenId, a.address)
+      .to.emit('TokenDelegated')
+      .withArgs(tokenId, b.address);
+    expect(await streaming.delegatedTo(tokenId)).to.eq(b.address);
+    expect(await streaming.balanceOfDelegate(b.address)).to.eq(1);
+    expect(await streaming.balanceOfDelegate(a.address)).to.eq(0);
+    expect(await streaming.lockedBalances(a.address, token.address)).to.eq(amount);
+    expect(await streaming.lockedBalances(b.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(a.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(b.address, token.address)).to.eq(amount);
+  });
+  it('reverts if wallet B tries to delegate a token delegated to it', async () => {
+    await expect(streaming.connect(b).delegateTokens([tokenId])).to.be.reverted;
+  });
+  it('wallet A can re-delegate token to wallet C', async () => {
+    expect(await streaming.connect(a).delegateTokens(c.address, [tokenId]))
+      .to.emit('DelegateRemoved')
+      .withArgs(tokenId, b.address)
+      .to.emit('TokenDelegated')
+      .withArgs(tokenId, c.address);
+    expect(await streaming.delegatedTo(tokenId)).to.eq(c.address);
+    expect(await streaming.balanceOfDelegate(c.address)).to.eq(1);
+    expect(await streaming.balanceOfDelegate(b.address)).to.eq(0);
+    expect(await streaming.balanceOfDelegate(a.address)).to.eq(0);
+    expect(await streaming.lockedBalances(a.address, token.address)).to.eq(amount);
+    expect(await streaming.lockedBalances(c.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(a.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(b.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(c.address, token.address)).to.eq(amount);
+  });
+  it('wallet A is removed as delegate when the NFT is fully redeemed', async () => {
+    await streaming.connect(a).redeemNFTs([tokenId]);
+    await expect(streaming.delegatedTo(tokenId)).to.be.reverted;
+    expect(await streaming.balanceOfDelegate(c.address)).to.eq(0);
+    expect(await streaming.balanceOfDelegate(b.address)).to.eq(0);
+    expect(await streaming.balanceOfDelegate(a.address)).to.eq(0);
+    expect(await streaming.lockedBalances(a.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(a.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(b.address, token.address)).to.eq(0);
+    expect(await streaming.delegatedBalances(c.address, token.address)).to.eq(0);
+  });
+};
+
 module.exports = {
-    delegateTests,
+  delegateStreamingTests,
+  delegateBoundTests,
 };

@@ -76,6 +76,8 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   /// @notice event for when a new URI is set for the NFT metadata linking
   event URISet(string newURI);
 
+  event AdminDeleted(address _admin);
+
   /// @notice the constructur function has two params:
   /// @param name is the name of the collection of NFTs
   /// @param symbol is the symbol for the NFT collection, typically an abbreviated version of the name
@@ -110,6 +112,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     require(msg.sender == admin, 'SV01');
     require(uriSet, 'not set');
     delete admin;
+    emit AdminDeleted(msg.sender);
   }
 
   /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens
