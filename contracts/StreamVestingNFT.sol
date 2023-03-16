@@ -72,7 +72,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   event NFTRevoked(uint256 indexed id, uint256 balance, uint256 remainder);
   /// @notice event when the NFT is redeemed, there are two redemption types, partial and full redemption
   /// if the remainder == 0 then it is a full redemption and the NFT is burned, otherwise it is a partial redemption
-  event NFTRedeemed(uint256 indexed id, uint256 balance, uint256 remainder);
+  event NFTRedeemed(uint256 indexed id, uint256 balance, uint256 remainder, uint256 newStart);
   /// @notice event for when a new URI is set for the NFT metadata linking
   event URISet(string newURI);
 
@@ -281,7 +281,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
       streams[tokenId].start = block.timestamp;
     }
     TransferHelper.withdrawTokens(stream.token, holder, balance);
-    emit NFTRedeemed(tokenId, balance, remainder);
+    emit NFTRedeemed(tokenId, balance, remainder, block.timestamp);
   }
 
   /// @notice the intenral revoke function that the vestingAdmin may call to revoke tokens
