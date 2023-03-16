@@ -18,11 +18,7 @@ contract StreamingBoundHedgeys is StreamingNFT {
   }
 
   /// @dev these NFTs cannot be transferred
-  function _transfer(
-    address from,
-    address to,
-    uint256 tokenId
-  ) internal virtual override {
+  function _transfer(address from, address to, uint256 tokenId) internal virtual override {
     revert('Not transferrable');
   }
 }
