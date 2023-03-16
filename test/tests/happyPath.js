@@ -85,7 +85,7 @@ module.exports = (vesting, locks, bound, amountParams, timeParams) => {
       expect(balances.balance).to.eq(finalAmount);
       expect(await streaming.connect(a).redeemNFTs(['1']))
         .to.emit('NFTRedeemed')
-        .withArgs('1', finalAmount, 0);
+        .withArgs('1', finalAmount, 0, end + 1);
       tokenBalanceofA = await token.balanceOf(a.address);
       tokenBalanceofContract = await token.balanceOf(streaming.address);
       expect(tokenBalanceofA).to.eq(amount);
