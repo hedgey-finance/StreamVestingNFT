@@ -114,3 +114,5 @@ coverage.json
 
 scripts/keys.js
 scripts/prodDeploy.js
+
+flattened/
