@@ -15,7 +15,7 @@ import './interfaces/IStreamNFT.sol';
  * @notice each NFT has a vestingAdmin that can revoke the NFT and pull and unvested tokens back to it at any time
  * @notice this bound NFT collection cannot be transferred
  * @notice it uses the Enumerable extension to allow for easy lookup to pull balances of one account for multiple NFTs
- * it also uses a new ERC721 Delegate contract that allows users to delegate their NFTs to other wallets for the puprose of voting
+ * it also uses a new ERC721 Delegate contract that allows users to delegate their NFTs to other wallets for the purpose of voting
  * @author alex michelsen aka icemanparachute
  */
 
@@ -78,7 +78,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   event AdminDeleted(address _admin);
 
-  /// @notice the constructur function has two params:
+  /// @notice the constructor function has two params:
   /// @param name is the name of the collection of NFTs
   /// @param symbol is the symbol for the NFT collection, typically an abbreviated version of the name
   constructor(
@@ -116,11 +116,11 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   }
 
   /// @notice createNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens
-  /// @param recipient is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
+  /// @param recipient is the recipient of the NFT. It can be the self minted to oneself, or minted to a different address than the caller of this function
   /// @param token is the token address of the tokens that will be vesting inside the stream
   /// @param amount is the total amount of tokens to be locked and vesting for the duration of the streaming unlock period
-  /// @param start is the start date for when the tokens start to become vested, this can be past dated, present or futured dated using unix timestamp
-  /// @param cliffDate is an optional paramater to allow a future single cliff date where tokens will be vested.
+  /// @param start is the start date for when the tokens start to become vested, this can be past dated, present or future dated using unix timestamp
+  /// @param cliffDate is an optional parameter to allow a future single cliff date where tokens will be vested.
   /// If the start date of vest is prior to the cliff, then on the cliff anything vested from the start will immediately be vested at the cliffdate
   /// @param rate is the rate tokens are continuously vesting, in seconds
   /// @param vestingAdmin is the admin of the vesting contract who has the enormous power to revoke the vesting stream at any time prior to full vest date
@@ -138,11 +138,11 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
 
   /// @notice createLockedNFT function is the function to mint a new NFT and simultaneously create a time vesting stream of tokens,
   /// with the caveat that vested tokens are subjext to a lockup period, such that even once tokens are vested they can only be redeemed after the unlock date has passed
-  /// @param recipient is the recipient of the NFT. It can be the self minted to onesself, or minted to a different address than the caller of this function
+  /// @param recipient is the recipient of the NFT. It can be the self minted to oneself, or minted to a different address than the caller of this function
   /// @param token is the token address of the tokens that will be vesting inside the stream
   /// @param amount is the total amount of tokens to be locked and vesting for the duration of the streaming unlock period
-  /// @param start is the start date for when the tokens start to become vested, this can be past dated, present or futured dated using unix timestamp
-  /// @param cliffDate is an optional paramater to allow a future single cliff date where tokens will be vested.
+  /// @param start is the start date for when the tokens start to become vested, this can be past dated, present or future dated using unix timestamp
+  /// @param cliffDate is an optional parameter to allow a future single cliff date where tokens will be vested.
   /// If the start date of vest is prior to the cliff, then on the cliff anything vested from the start will immediately be vested at the cliffdate
   /// @param rate is the rate tokens are continuously vesting, in seconds
   /// @param vestingAdmin is the admin of the vesting contract who has the enormous power to revoke the vesting stream at any time prior to full vest date
@@ -199,7 +199,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     );
   }
 
-  /// @dev function to delegate specific tokens to another wallt for voting
+  /// @dev function to delegate specific tokens to another wallet for voting
   /// @param delegate is the address of the wallet to delegate the NFTs to
   /// @param tokenIds is the array of tokens that we want to delegate
   function delegateTokens(address delegate, uint256[] memory tokenIds) external {
@@ -264,7 +264,6 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
   function _redeemNFT(address holder, uint256 tokenId) internal {
     require(ownerOf(tokenId) == holder, 'SV06');
     Stream memory stream = streams[tokenId];
-    require(stream.unlockDate <= block.timestamp, 'SV07');
     (uint256 balance, uint256 remainder) = StreamLibrary.streamBalanceAtTime(
       stream.start,
       stream.cliffDate,
@@ -354,7 +353,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     end = StreamLibrary.endDate(stream.start, stream.rate, stream.amount);
   }
 
-  /// @dev lockedBalances is a function that will enumarate all of the tokens of a given holder, and aggregate those balances up
+  /// @dev lockedBalances is a function that will enumerate all of the tokens of a given holder, and aggregate those balances up
   /// this is useful for snapshot voting and other view methods to see the total balances of a given user for a single token
   /// @param holder is the owner of the NFTs
   /// @param token is the address of the token that is locked by each of the NFTs
@@ -369,7 +368,7 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
     }
   }
 
-  /// @dev delegatedBAlances is a function that will enumarate all of the tokens of a given delagate, and aggregate those balances up
+  /// @dev delegatedBAlances is a function that will enumerate all of the tokens of a given delegate, and aggregate those balances up
   /// this is useful for snapshot voting and other view methods to see the total balances of a given user for a single token
   /// @param delegate is the wallet that has been delegated NFTs
   /// @param token is the address of the token that is locked by each of the NFTs

@@ -4,9 +4,7 @@ pragma solidity 0.8.17;
 import './StreamingNFT.sol';
 
 contract StreamingHedgeys is StreamingNFT {
-  constructor(string memory name, string memory symbol) StreamingNFT(name, symbol) {
-    admin = msg.sender;
-  }
+  constructor(string memory name, string memory symbol) StreamingNFT(name, symbol) {}
 
   /// @dev function to transfer and redeem tokens
   /// @dev this is helpful because tokens are continuously unlocking, this function will unlock the max amount of tokens prior to a transfer to ensure no leftover

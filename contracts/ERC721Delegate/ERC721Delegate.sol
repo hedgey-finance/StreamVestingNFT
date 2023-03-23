@@ -57,8 +57,6 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
     return _allTokens[index];
   }
 
-  
-
   /**
    * @dev See {ERC721-_beforeTokenTransfer}.
    */
@@ -129,7 +127,7 @@ abstract contract ERC721Delegate is ERC721, IERC721Delegate {
     emit DelegateRemoved(tokenId, from);
   }
 
-  // function for transfering should reduce the balances of from by 1, increase the balances of to by 1, and set the delegate address To
+  // function for transferring should reduce the balances of from by 1, increase the balances of to by 1, and set the delegate address To
   function _transferDelegate(address to, uint256 tokenId) private {
     _removeDelegate(tokenId);
     _addDelegate(to, tokenId);

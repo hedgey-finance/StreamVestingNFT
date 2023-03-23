@@ -357,6 +357,30 @@ const redeemErrorTests = (vesting, bound) => {
       expect(events.length).to.eq(0);
     }
   });
+  it(`will skip redemption if the Vesting NFT unlock date is in the future`, async () => {
+    if (vesting) {
+      start = await time.latest();
+      cliff = start;
+      unlock = now + 100;
+      amount= C.E18_100;
+      rate = C.E18_1;
+      await streaming.createLockedNFT(
+        a.address,
+        token.address,
+        amount,
+        start,
+        cliff,
+        rate,
+        creator.address,
+        unlock,
+        true
+      );
+      await time.increase(50);
+      const retry = await streaming.connect(a).redeemNFTs(['5']);
+      const events = (await retry.wait()).events;
+      expect(events.length).to.eq(0);
+    }
+  });
 };
 
 module.exports = {
