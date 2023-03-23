@@ -1,9 +1,9 @@
 const ethers = require('ethers');
 const batchStreamer = require('../artifacts/contracts/BatchStreamer.sol/BatchStreamer.json');
 const batchVester = require('../artifacts/contracts/BatchVester.sol/BatchVester.json');
-const vestingNFT = require('../artifacts/contracts/StreamVestingNFT.sol/StreamVestingNFT.json');
-const streamingNFT = require('../artifacts/contracts/StreamingHedgeys.sol/StreamingHedgeys.json');
-const streamingBound = require('../artifacts/contracts/StreamingBoundHedgeys.sol/StreamingBoundHedgeys.json');
+const streamVestingNFT = require('../artifacts/contracts/StreamVestingNFT.sol/StreamVestingNFT.json');
+const streamingHedgeys = require('../artifacts/contracts/StreamingHedgeys.sol/StreamingHedgeys.json');
+const streamingBoundHedgeys = require('../artifacts/contracts/StreamingBoundHedgeys.sol/StreamingBoundHedgeys.json');
 const keys = require('./keys');
 
 async function deployNFT(rpcUrl, artifact, privateKey, args, uriBase) {
@@ -36,5 +36,6 @@ async function updateURI(rpcUrl, artifact, privateKey, address, uriBase) {
     const wallet = new ethers.Wallet(privateKey, provider);
     const contract = new ethers.Contract(address, artifact.abi, wallet);
     const uri = `${uriBase}${address.toLowerCase()}/`;
-    await contract.updateBaseURI(uri);
+    const tx = await contract.updateBaseURI(uri);
+    console.log(tx);
 }
