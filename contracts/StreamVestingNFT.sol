@@ -271,7 +271,6 @@ contract StreamVestingNFT is ERC721Delegate, ReentrancyGuard {
       stream.rate,
       block.timestamp
     );
-    require(balance > 0, 'SV08');
     if (balance == stream.amount) {
       delete streams[tokenId];
       _burn(tokenId);
