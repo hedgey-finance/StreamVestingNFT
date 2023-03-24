@@ -47,6 +47,9 @@ const config: HardhatUserConfig = {
     harmony: {
       url: keys.networks.harmony.url
     },
+    boba: {
+      url: keys.networks.boba.url
+    }
   },
   etherscan: {
     apiKey: {
