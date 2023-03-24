@@ -391,6 +391,64 @@ const batchErrorTests = (vesting, locked, bound) => {
       ).to.be.revertedWith('SV04');
     }
   });
+  it('Fails if any of the amounts are 0 with mint type', async () => {
+    let now = await time.latest();
+    let amounts = [C.E18_1, C.ZERO];
+    let recipients = [a.address, a.address];
+    let starts = [now, now];
+    let cliffs = [now, now];
+    let rates = [C.E18_1, C.E18_1];
+    let unlocks = [0, 0];
+    let transferlock = true;
+    if (vesting) {
+      if (locked) {
+        await expect(
+          batcher[
+            'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool,uint256)'
+          ](
+            streaming.address,
+            recipients,
+            token.address,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            unlocks,
+            transferlock,
+            1
+          )
+        ).to.be.revertedWith('SV04');
+      } else {
+        await expect(
+          batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256)'](
+            streaming.address,
+            recipients,
+            token.address,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            1
+          )
+        ).to.be.revertedWith('SV04');
+      }
+    } else {
+      await expect(
+        batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],uint256)'](
+          streaming.address,
+          recipients,
+          token.address,
+          amounts,
+          starts,
+          cliffs,
+          rates,
+          1
+        )
+      ).to.be.revertedWith('SV04');
+    }
+  });
   it('Fails if any of the recipients are 0', async () => {
     let now = await time.latest();
     let amounts = [C.E18_1, C.E18_1];
@@ -442,6 +500,64 @@ const batchErrorTests = (vesting, locked, bound) => {
           starts,
           cliffs,
           rates
+        )
+      ).to.be.revertedWith('SV02');
+    }
+  });
+  it('Fails if any of the recipients are 0 with mintType', async () => {
+    let now = await time.latest();
+    let amounts = [C.E18_1, C.E18_1];
+    let recipients = [a.address, C.ZERO_ADDRESS];
+    let starts = [now, now];
+    let cliffs = [now, now];
+    let rates = [C.E18_1, C.E18_1];
+    let unlocks = [0, 0];
+    let transferlock = true;
+    if (vesting) {
+      if (locked) {
+        await expect(
+          batcher[
+            'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool,uint256)'
+          ](
+            streaming.address,
+            recipients,
+            token.address,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            unlocks,
+            transferlock,
+            1
+          )
+        ).to.be.revertedWith('SV02');
+      } else {
+        await expect(
+          batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256)'](
+            streaming.address,
+            recipients,
+            token.address,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            1
+          )
+        ).to.be.revertedWith('SV02');
+      }
+    } else {
+      await expect(
+        batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],uint256)'](
+          streaming.address,
+          recipients,
+          token.address,
+          amounts,
+          starts,
+          cliffs,
+          rates,
+          1
         )
       ).to.be.revertedWith('SV02');
     }
@@ -500,6 +616,63 @@ const batchErrorTests = (vesting, locked, bound) => {
       ).to.be.reverted;
     }
   });
+  it('Fails if the token address is 0 with mintType', async () => {
+    let now = await time.latest();
+    let amounts = [C.E18_1, C.E18_1];
+    let recipients = [a.address, a.adress];
+    let starts = [now, now];
+    let cliffs = [now, now];
+    let rates = [C.E18_1, C.E18_1];
+    let unlocks = [0, 0];
+    if (vesting) {
+      if (locked) {
+        await expect(
+          batcher[
+            'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool,uint256)'
+          ](
+            streaming.address,
+            recipients,
+            C.ZERO_ADDRESS,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            unlocks,
+            true,
+            1
+          )
+        ).to.be.reverted;
+      } else {
+        await expect(
+          batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256)'](
+            streaming.address,
+            recipients,
+            C.ZERO_ADDRESS,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            1
+          )
+        ).to.be.reverted;
+      }
+    } else {
+      await expect(
+        batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],uint256)'](
+          streaming.address,
+          recipients,
+          C.ZERO_ADDRESS,
+          amounts,
+          starts,
+          cliffs,
+          rates,
+          1
+        )
+      ).to.be.reverted;
+    }
+  });
   it('Fails if a rate is larger than the amount or is 0', async () => {
     let now = await time.latest();
     let amounts = [C.E18_1, C.E18_1];
@@ -550,6 +723,63 @@ const batchErrorTests = (vesting, locked, bound) => {
           starts,
           cliffs,
           rates
+        )
+      ).to.be.revertedWith('SV05');
+    }
+  });
+  it('Fails if a rate is larger than the amount or is 0 with mintType', async () => {
+    let now = await time.latest();
+    let amounts = [C.E18_1, C.E18_1];
+    let recipients = [a.address, a.address];
+    let starts = [now, now];
+    let cliffs = [now, now];
+    let rates = [C.E18_1, C.E18_10];
+    let unlocks = [0, 0];
+    if (vesting) {
+      if (locked) {
+        await expect(
+          batcher[
+            'createLockedBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256[],bool,uint256)'
+          ](
+            streaming.address,
+            recipients,
+            token.address,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            unlocks,
+            true,
+            1
+          )
+        ).to.be.revertedWith('SV05');
+      } else {
+        await expect(
+          batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],address,uint256)'](
+            streaming.address,
+            recipients,
+            token.address,
+            amounts,
+            starts,
+            cliffs,
+            rates,
+            creator.address,
+            1
+          )
+        ).to.be.revertedWith('SV05');
+      }
+    } else {
+      await expect(
+        batcher['createBatch(address,address[],address,uint256[],uint256[],uint256[],uint256[],uint256)'](
+          streaming.address,
+          recipients,
+          token.address,
+          amounts,
+          starts,
+          cliffs,
+          rates,
+          1
         )
       ).to.be.revertedWith('SV05');
     }

@@ -2,6 +2,7 @@ const { expect } = require('chai');
 const { setupStreaming, setupVesting } = require('../fixtures');
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const C = require('../constants');
+const { ethers } = require('hardhat');
 
 module.exports = (vesting, bound) => {
   let streaming, s, uri, a, creator, token;
@@ -46,5 +47,14 @@ module.exports = (vesting, bound) => {
     s = vesting ? await setupVesting() : await setupStreaming(bound);
     streaming = s.streaming;
     await expect(streaming.deleteAdmin()).to.be.revertedWith('not set');
+  });
+  it('reverts if the transferLocker input for vesting constructor is the 0 address', async () => {
+    const [wallet, address1] = await ethers.getSigners()
+    const Streaming = await ethers.getContractFactory('StreamVestingNFT');
+    await expect(Streaming.deploy('Streamers', 'STMY', C.ZERO_ADDRESS, address1)).to.be.reverted;
+    await expect(Streaming.deploy('Streamers', 'STMY', address1, C.ZERO_ADDRESS)).to.be.reverted;
+  });
+  it('checks the ERC721Delegate interface functions', async () => {
+    expect(await streaming.supportsInterface('0x12345678')).to.be.eq(false);
   });
 };

@@ -225,6 +225,7 @@ const redeemAllTest = (vesting, bound, amountParams, timeParams) => {
         }
       }
     }
+    await expect(streaming.tokenOfOwnerByIndex(a.address, balanceOfA+1)).to.be.revertedWith('ERC721Enumerable: owner index out of bounds');
     let timeStamp = (await time.latest()) + 1;
     const tx = await streaming.connect(a).redeemAllNFTs();
     for (let i = 0; i < tokens.length; i++) {
@@ -276,10 +277,10 @@ const transferAndRedeemTest = (amountParams, timeParams) => {
   });
   it(`fails to redeem and transfer if there is no remainder`, async () => {
     now = await time.latest();
-    let start = now - 10;
-    let cliff = start;
-    let amount = C.E18_1;
-    let rate = C.E18_1;
+    start = now - 10;
+    cliff = start;
+    amount = C.E18_1;
+    rate = C.E18_1;
     await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
     const balanceOfA = await streaming.balanceOf(a.address);
     const tokenId = await streaming.tokenOfOwnerByIndex(a.address, balanceOfA.sub(1));
@@ -287,14 +288,36 @@ const transferAndRedeemTest = (amountParams, timeParams) => {
   });
   it(`fails to transfer if the balance is 0`, async () => {
     now = await time.latest();
-    let start = now + 1000;
-    let cliff = start;
-    let amount = C.E18_1;
-    let rate = C.E18_1;
+    start = now + 1000;
+    cliff = start;
     await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
     const balanceOfA = await streaming.balanceOf(a.address);
     const tokenId = await streaming.tokenOfOwnerByIndex(a.address, balanceOfA.sub(1));
     await expect(streaming.connect(a).redeemAndTransfer(tokenId, b.address)).to.be.revertedWith('SV08');
+  });
+  it('streaming hedgeys transfers a token, and the new owner redeems', async () => {
+    start = await time.latest();
+    cliff = start;
+    amount = C.E18_1000;
+    rate = C.E18_10;
+    await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
+    const balanceOfA = await streaming.balanceOf(a.address);
+    const tokenId = await streaming.tokenOfOwnerByIndex(a.address, balanceOfA.sub(1));
+    expect(await streaming.connect(a).transferFrom(a.address, b.address, tokenId)).to.emit('Transfer');
+    await time.increase(5);
+    await expect(streaming.connect(a).redeemNFTs([tokenId])).to.be.revertedWith('SV06');
+    expect(await streaming.connect(b).redeemAllNFTs()).to.emit('NFTRedeemed');
+  });
+  it('fails to transferAndRedeem if called by !owner of the token', async () => {
+    start = await time.latest();
+    cliff = start;
+    amount = C.E18_1000;
+    rate = C.E18_10;
+    await streaming.createNFT(a.address, token.address, amount, start, cliff, rate);
+    const balanceOfA = await streaming.balanceOf(a.address);
+    const tokenId = await streaming.tokenOfOwnerByIndex(a.address, balanceOfA.sub(1));
+    expect(await streaming.connect(a).transferFrom(a.address, b.address, tokenId)).to.emit('Transfer');
+    await expect(streaming.redeemAndTransfer(tokenId, b.address)).to.be.revertedWith('SV06');
   });
 };
 
@@ -362,7 +385,7 @@ const redeemErrorTests = (vesting, bound) => {
       start = await time.latest();
       cliff = start;
       unlock = now + 100;
-      amount= C.E18_100;
+      amount = C.E18_100;
       rate = C.E18_1;
       await streaming.createLockedNFT(
         a.address,
